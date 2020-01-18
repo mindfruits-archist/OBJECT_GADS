@@ -8,8 +8,17 @@ var Ads = function () {
   function Ads(id) {
     _classCallCheck(this, Ads);
 
-    this.id = id;
-    this._ = this.getAccountsFromAccountId();
+    this._alert = [];
+    this.id = id || "error: id account manquant an argument";
+    this._alert.push("this.id: " + this.id);
+    this.ids = { _: "accounts" };
+    this.accounts = this.getClients();
+    this.ids[this.id] = { _: "campaigns" };
+    this._accounts = this.getAccountsFromAccountId();
+    this._account = this._ = this.getAccountsFromAccountId()[0];
+    this._campaigns = this.getCampaignsFromAccountId();
+    this._adgroups = this.getAdGroupsFromCampaignsObt();
+    this._ads = this.getAdsFromAdGroupsObj();
   }
   /*********************************************************************************************************************************************/
   /*********************************************************************************************************************************************/
@@ -17,9 +26,29 @@ var Ads = function () {
 
 
   _createClass(Ads, [{
+    key: "getClients",
+    value: function getClients() {
+      var accountSelector = AdsManagerApp.accounts().orderBy("Name DESC");
+      var tmp;
+      var accounts = {};
+      var objects = [];
+      var ids = [];
+
+      var accountIterator = accountSelector.get();
+      while (accountIterator.hasNext()) {
+        tmp = accountIterator.next();
+        ids.push(tmp.getCustomerId());
+        objects.push(tmp);
+        accounts[tmp.getCustomerId()] = tmp;
+        this.ids[this.id] = { _: "campaigns" };
+        if (this.id == tmp.getCustomerId()) this._alert.push("Ads::getClients: (" + tmp.Name + "), account.getCustomerId=" + this.id + " à été entré dans le contructeur");
+      }
+      return { accounts: accounts, ids: ids, objects: objects };
+    }
+  }, {
     key: "getAccountsFromAccountId",
     value: function getAccountsFromAccountId() {
-      var id = this.id;
+      var id = [this.id];
       var array = [];
       Logger.log(id);
       var accounts = AdsManagerApp.accounts().withIds(id).get();
@@ -33,69 +62,125 @@ var Ads = function () {
     /*********************************************************************************************************************************************/
 
   }, {
+    key: "getCampaignsFromIds",
+    value: function getCampaignsFromIds(id) {
+      if (typeof id == "string") id = [id];
+      var arr = [];
+      var sel = AdsApp.campaigns().withIds(id);
+      var ite = sel.get();
+      while (ite.hasNext()) {
+        arr.push(ite.next());
+      }return arr;
+    }
+  }, {
     key: "getCampaignsFromAccountId",
     value: function getCampaignsFromAccountId(doReturnObject) {
       var tmp;
-      var array = [];
-      var array_ = [];
-      var bool = false;
-      if (typeof doReturnObject == "undefined") bool = false;else bool = true;
+      var campaigns = {};
+      var objects = [];
+      var ids = [];
+      var bool = true;
+      if (typeof doReturnObject !== "undefined") bool = false;
 
-      var accounts = this._;
-      AdsManagerApp.select(accounts[0]);
+      AdsManagerApp.select(this._);
       var sel = AdsApp.campaigns();
-      var ite = sel.get();
+      var ite = sel.withCondition("Status = ENABLED").get();
       while (ite.hasNext()) {
         tmp = ite.next();
-        array.push({ campaignId: tmp.getId(), campaignName: tmp.getName(), enabled: tmp.isEnabled() });
-        array_.push(tmp);
+        ids.push(tmp.getId());
+        objects.push(tmp);
+        campaigns[tmp.getId()] = tmp;
+        this.ids[this.id][tmp.getId()] = { _: "adGroups" };
       }
-      Logger.log("---getCampaignsFromAccountId say: this ads id contain %s campaigns", array.length);
-      if (bool) return { details: array, objects: array_ };else return array;
+      Logger.log("---getCampaignsFromAccountId say: this account (" + this._.Name + ") id contain %s campaigns", ids.length);
+      if (bool) return { _: campaigns, ids: ids, objects: objects };else return campaigns;
+    }
+  }, {
+    key: "getAdGroupsFromIds",
+    value: function getAdGroupsFromIds(id) {
+      if (typeof id == "string") id = [id];
+      var arr = [];
+      var sel = AdsApp.adGroups().withIds(id);
+      var ite = sel.get();
+      while (ite.hasNext()) {
+        arr.push(ite.next());
+      }return arr;
+    }
+  }, {
+    key: "getAdGroupsFromCampaignsObt",
+    value: function getAdGroupsFromCampaignsObt() {
+      var obj = {};
+      for (a in this._campaigns.objects) {
+        obj[this._campaigns.ids[a]] = this.getAdGroupsFromCampaignObt(this._campaigns.objects[a]);
+      }return obj;
     }
   }, {
     key: "getAdGroupsFromCampaignObt",
     value: function getAdGroupsFromCampaignObt(obj, doReturnObject) {
       var tmp;
-      var array = [];
-      var array_ = [];
-      var bool = false;
-      if (typeof doReturnObject == "undefined") bool = false;else bool = true;
+      var adGroups = {};
+      var objects = [];
+      var ids = [];
+      var bool = true;
+      if (typeof doReturnObject !== "undefined") bool = false;
 
       var sel = obj.adGroups();
-      var ite = sel.get();
+      var ite = sel.withCondition("Status = ENABLED").get();
       while (ite.hasNext()) {
         tmp = ite.next();
-        array.push({ adGroupId: tmp.getId(), adGroupName: tmp.getName(), enabled: tmp.isEnabled() });
-        array_.push(tmp);
+        ids.push(tmp.getId());
+        objects.push(tmp);
+        adGroups[tmp.getId()] = tmp;
+        this.ids[this.id][obj.getId()][tmp.getId()] = { _: "ads" };
       }
-      Logger.log("---getAdGroupsFromCampaignObt say: this campaign object contain %s adGroups", array.length);
-      if (bool) return { details: array, objects: array_ };else return array;
+      Logger.log("---getAdGroupsFromCampaignObt say: this campaign object contain %s adGroups", ids.length);
+      if (bool) return { _: adGroups, ids: ids, objects: objects };else return adGroups;
     }
     /*********************************************************************************************************************************************/
 
   }, {
     key: "getAdsFromAdGroupsObj",
-    value: function getAdsFromAdGroupsObj(obj, doReturnObject) {
-      var tmp, tmpbis;
-      var array = [];
-      var array_ = [];
-      var bool = false;
-      if (typeof doReturnObject == "undefined") bool = false;else bool = true;
-
-      var sel = obj.ads();
-      var ite = sel.get();
-      while (ite.hasNext()) {
-        tmp = ite.next();
-        array.push({ adId: tmp.getId(), title: "je ne sais pas comment trouver le titre d'une ad...", description: tmp.getDescription1(), urls: [tmp.urls().getFinalUrl(), tmp.urls().getMobileFinalUrl(), tmp.urls().getFinalUrlSuffix(), tmp.urls().getTrackingTemplate()], adAdGroup: tmp.getAdGroup(), adCampaign: tmp.getCampaign(), enabled: tmp.isEnabled() });
-        array_.push(tmp);
-      }
-      Logger.log("---getAdsFromAdGroupsObj say: this adGroup object contain %s ads", array.length);
-      if (bool) return { details: array, objects: array_ };else return array;
+    value: function getAdsFromAdGroupsObj() {
+      var obj = {};
+      for (a in this._campaigns.objects) {
+        for (aa in this._adgroups[this._campaigns.ids[a]].objects) {
+          obj[this._adgroups[this._campaigns.ids[a]].ids[a]] = this.getAdsFromAdGroupObj(this._adgroups[this._campaigns.ids[a]].objects[a]);
+        }
+      }return obj;
     }
   }, {
-    key: "getAdsFromDifferentCampaignsFromAccountId",
-    value: function getAdsFromDifferentCampaignsFromAccountId(id, nbr) {}
+    key: "getAdsFromAdGroupObj",
+    value: function getAdsFromAdGroupObj(obj, doReturnObject) {
+      var tmp, tmpbis;
+      var ads = {};
+      var objects = [];
+      var ids = [];
+      var bool = true;
+      if (typeof doReturnObject !== "undefined") bool = false;
+
+      var sel = obj.ads();
+      var ite = sel.withCondition("Status = ENABLED").get();
+      while (ite.hasNext()) {
+        tmp = ite.next();
+        ids.push(tmp.getId());
+        objects.push(tmp);
+        ads[tmp.getId()] = tmp;
+        this.ids[this.id][obj.getCampaign().getId()][obj.getId()][tmp.getId()] = { _: "adLabels", labelSelector: tmp.labels };
+      }
+      Logger.log("---getAdsFromAdGroupsObj say: this adGroup object contain %s ads", ids.length);
+      if (bool) return { _: ads, ids: ids, objects: objects };else return array;
+    }
+  }, {
+    key: "getAdsFromIds",
+    value: function getAdsFromIds(id) {
+      if (typeof id == "string") id = [id];
+      var arr = [];
+      var sel = AdsApp.ads().withIds(id);
+      var ite = sel.get();
+      while (ite.hasNext()) {
+        arr.push(ite.next());
+      }return arr;
+    }
     /*********************************************************************************************************************************************/
     /*********************************************************************************************************************************************/
     /*********************************************************************************************************************************************/
