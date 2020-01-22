@@ -3,15 +3,16 @@ class Ads{
     this._alert = []
     this.id = id || "error: id account manquant an argument"
     this._alert.push("this.id: "+this.id);
+    this.ok = this.script_from_Automated_Personalized_Impression_Checker()
+    /*
     this.ids = {_: "accounts"}
     this.accounts = this.getClients()
-    this.ids[this.id] = {_: "campaigns"}
     this._accounts = this.getAccountsFromAccountId()
     this._account = this._ = this.getAccountsFromAccountId()[0]
     this._campaigns = this.getCampaignsFromAccountId();
     this._adgroups = this.getAdGroupsFromCampaignsObt();
     this._ads = this.getAdsFromAdGroupsObj();
-
+    */
   }
   /*********************************************************************************************************************************************/
   /*********************************************************************************************************************************************/
@@ -45,7 +46,7 @@ class Ads{
     while (accounts.hasNext()){
       array.push(accounts.next())
     }
-    Logger.log("---this.getAccountsFromAccountId say: this ads id contain %s accounts", array.length)
+    // Logger.log("---this.getAccountsFromAccountId say: this ads id contain %s accounts", array.length)
     return array
   }
   /*********************************************************************************************************************************************/
@@ -75,7 +76,7 @@ class Ads{
       campaigns[tmp.getId()] = tmp
       this.ids[this.id][tmp.getId()] = {_: "adGroups"}
     }
-    Logger.log("---getCampaignsFromAccountId say: this account ("+this._.Name+") id contain %s campaigns", ids.length)
+    // Logger.log("---getCampaignsFromAccountId say: this account ("+this._.Name+") id contain %s campaigns", ids.length)
     if(bool)  return {_:campaigns,ids,objects}
     else      return campaigns
   }
@@ -110,7 +111,7 @@ class Ads{
       adGroups[tmp.getId()] = tmp
       this.ids[this.id][obj.getId()][tmp.getId()] = {_: "ads"}
     }
-    Logger.log("---getAdGroupsFromCampaignObt say: this campaign object contain %s adGroups", ids.length)
+    // Logger.log("---getAdGroupsFromCampaignObt say: this campaign object contain %s adGroups", ids.length)
     if(bool)  return {_:adGroups,ids,objects}
     else      return adGroups
   }
@@ -139,7 +140,7 @@ class Ads{
       ads[tmp.getId()] = tmp
       this.ids[this.id][obj.getCampaign().getId()][obj.getId()][tmp.getId()] = {_: "adLabels", labelSelector: tmp.labels}
     }
-    Logger.log("---getAdsFromAdGroupsObj say: this adGroup object contain %s ads", ids.length)
+    // Logger.log("---getAdsFromAdGroupsObj say: this adGroup object contain %s ads", ids.length)
     if(bool)  return {_:ads,ids,objects}
     else                return array
   }
@@ -178,11 +179,11 @@ class Ads{
     var labelIterator = labelSelector.get();
     var i = 0
     while (labelIterator.hasNext()) {
-      Logger.log("---getLabelMatchFromAccountId dit: %s", "tour n°"+i)
+      // Logger.log("---getLabelMatchFromAccountId dit: %s", "tour n°"+i)
       var label = labelIterator.next();
       bool = true
     }
-    Logger.log("---getLabelMatchFromAccountId dit: bool = %s", bool)
+    // Logger.log("---getLabelMatchFromAccountId dit: bool = %s", bool)
     return bool
   }
   createLabel(name){
@@ -227,4 +228,54 @@ class Ads{
   /*********************************************************************************************************************************************/
   /*********************************************************************************************************************************************/
   /*********************************************************************************************************************************************/
+  script_from_Automated_Personalized_Impression_Checker() {
+    //https://ads.google.com/aw/bulk/scripts/edit?ocid=127821475&scriptId=3686868&euid=125808475&__u=9346270275&uscid=127821475&__c=4020307275&authuser=0
+    var tmp, cpt, obj, objects = [], account, accounts = {}, accountKey, campaign, campaigns = {}, campaignKey, group, groups = {}, groupKey, ad, ads = {}, adKey, object_Ad
+    /*
+    var _ = new SP('10xIHLxOJ8Rjjd0YATgXzUCXiN8onyEdi5Re5zZeHq7I')//Spreadsheet jumeau sur la plateforme GAS => https://docs.google.com/spreadsheets/d/10xIHLxOJ8Rjjd0YATgXzUCXiN8onyEdi5Re5zZeHq7I/edit
+    var sh_ads_params = _._.ads_params
+    var stats = _._.stats
+    var dev = _._.dev
+    */
+    //Logger.log(sh_ads_params)
+    //var clients = sh_ads_params.getRange(3,1,sh_ads_params.getLastRow()-2,sh_ads_params.getLastColumn()).getValues()
+    var clients = [["640-144-6914"]]
+    //Logger.log(clients)
+    var adsAccounts = []
+    for(a in clients)
+      if(clients[a][0]!=""){
+        /*Logger.log("\n\n---------client name: %s", clients[a][0])
+        Logger.log("account id: %s----------\n\n", clients[a][1])*/
+        //Logger.log(this._.length)
+        campaign = this.getCampaignsFromAccountId("")
+        campaigns[clients[a][1]] = {}
+        campaigns[clients[a][1]].accounts = this._
+        campaigns[clients[a][1]].campaigns = campaign.objects
+        campaigns[clients[a][1]].groups = {}
+        campaigns[clients[a][1]].ads = {}
+        campaign = campaign.details
+        for(aa in campaign){
+          group = this.getAdGroupsFromCampaignObt(campaign[aa].object, "")
+          campaigns[clients[a][1]].groups[campaign[aa].campaignId] = group.objects
+          group = group.details
+          for(aaa in group){
+            ad = this.getAdsFromAdGroupsObj(group[aaa].object, "")
+            campaigns[clients[a][1]].ads[group[aaa].adGroupId] = ad.objects
+            ad = ad.details
+            /*
+            for(aaaa in ad){
+              Logger.log("campaignName: %s, adGroup: %s, ad: %s", campaign[aa].campaignName, group[aaa].adGroupName, ad[aaaa].object.getHeadline())
+            }
+            */
+          }
+        }
+        obj = {id: clients[a][1], client: clients[a][0], accounts: campaigns[clients[a][1]].accounts, campaigns: campaigns[clients[a][1]].campaigns, groups: campaigns[clients[a][1]].groups, ads: campaigns[clients[a][1]].ads}
+        objects.push(obj)
+      }
+      else Logger.log("array client vide")
+    objects = JSON.stringify(objects)
+    return objects
+    //dev.getRange("A2:B2").setValues([["Ads accounts object", objects]])
+    //Logger.log(adsAccounts)
+  }
 }
