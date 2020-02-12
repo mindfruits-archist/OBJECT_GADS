@@ -137,7 +137,7 @@ class Ads{
       i++
       // Logger.log("campaign id: "+o.id)
     }
-    this.tmp.nbrCamapigns += i
+    this.tmp.nbrCampaigns += i
   }
   getGroupsFromCampaign(campaign){
     // Logger.log("getGroupsFromCampaign this.tmp.accountId: %s", this.tmp.accountId)
