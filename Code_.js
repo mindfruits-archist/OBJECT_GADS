@@ -82,6 +82,7 @@ class Ads{
       o.stats_week[this.date.getWeek()-2] = this.getStats(account, d.getFullYear()+""+this.completedate(d.getMonth()+1)+""+this.completedate(d.getDate()), dd.getFullYear()+""+this.completedate(dd.getMonth()+1)+""+this.completedate(dd.getDate()))
       o.stats_week_delta = {}
       o.stats_week_delta[this.date.getWeek()] = this.delta(o.stats_week[this.date.getWeek()-2], o.stats_week[this.date.getWeek()-1])
+      getCosts(account, o)
       o.campaigns = {}
       this._accounts[accountId] = {object: account, campaigns: {}}
       this.accounts[accountId] = o
@@ -125,6 +126,7 @@ class Ads{
       o.stats_week_delta[this.date.getWeek()] = this.delta(o.stats_week[this.date.getWeek()-2], o.stats_week[this.date.getWeek()-1])
       o.labels = this.getLabels(campaign)
       o.keywords = this.getKeywords(campaign)
+      getCosts(campaign, o)
       o.groups = {}
       this._accounts[this.tmp.accountId][this.tmp.campaignId] = {object: campaign, groups: {}}
       this.accounts[this.tmp.accountId].campaigns[this.tmp.campaignId] = o
@@ -165,6 +167,7 @@ class Ads{
       o.stats_week_delta[this.date.getWeek()] = this.delta(o.stats_week[this.date.getWeek()-2], o.stats_week[this.date.getWeek()-1])
       o.labels = this.getLabels(group)
       o.keywords = this.getKeywords(group)
+      getCosts(group, o)
       o.ads = {}
       this._accounts[this.tmp.accountId][this.tmp.campaignId][this.tmp.groupId] = {object: group, ads: {}}
       this.accounts[this.tmp.accountId].campaigns[this.tmp.campaignId].groups[this.tmp.groupId] = o
@@ -192,7 +195,7 @@ class Ads{
     while(ite.hasNext()){
       ad = ite.next();
       this.tmp.adId = ad.getId()
-      o = {}
+      o = {costs: {[this.date.getDate()]: 0, [this.date.getWeek()]: 0, [this.date.getMonth()+1]: 0}}
       o.id = ad.getId()
       o.accountId = this.tmp.accountId
       o.campaignId = this.tmp.campaignId
@@ -212,6 +215,7 @@ class Ads{
       o.type = ad.getType();
       o.labels = this.getLabels(ad);
       //o.keywords = this.getKeywords(ad)
+      getCosts(ad, o)
       arr.push(o)
       this._accounts[this.tmp.accountId][this.tmp.campaignId][this.tmp.groupId][this.tmp.adId] = {object: ad, labels: o.labels}
       this.accounts[this.tmp.accountId].campaigns[this.tmp.campaignId].groups[this.tmp.groupId].ads[this.tmp.adId] = o
@@ -456,8 +460,15 @@ class Ads{
   delta(fromObj, toObj){
     var a, aa, o = {}
     for(a in toObj)
-      o[a] = toObj[a] - fromObj[a]
+      o[a] = ((toObj[a] - fromObj[a])/fromObj[a])*100
     return o
+  }
+  getCosts(adObject, o){
+    if(typeof o.costs == "undefined")
+      o = {costs: {[this.date.getDate()]: 0, [this.date.getWeek()]: 0, [this.date.getMonth()+1]: 0}}
+    o.costs[this.date.getDate()] += adObject.getStatsFor("TODAY").getCost()
+    o.costs[this.date.getWeek()] += adObject.getStatsFor("LAST_WEEK").getCost()
+    o.costs[this.date.getMonth() + 1] += adObject.getStatsFor("LAST_MONTH").getCost()
   }
 
 

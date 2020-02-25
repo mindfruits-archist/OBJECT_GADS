@@ -2,6 +2,8 @@
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Ads = function () {
@@ -99,6 +101,7 @@ var Ads = function () {
         o.stats_week[this.date.getWeek() - 2] = this.getStats(account, d.getFullYear() + "" + this.completedate(d.getMonth() + 1) + "" + this.completedate(d.getDate()), dd.getFullYear() + "" + this.completedate(dd.getMonth() + 1) + "" + this.completedate(dd.getDate()));
         o.stats_week_delta = {};
         o.stats_week_delta[this.date.getWeek()] = this.delta(o.stats_week[this.date.getWeek() - 2], o.stats_week[this.date.getWeek() - 1]);
+        getCosts(account, o);
         o.campaigns = {};
         this._accounts[accountId] = { object: account, campaigns: {} };
         this.accounts[accountId] = o;
@@ -151,6 +154,7 @@ var Ads = function () {
         o.stats_week_delta[this.date.getWeek()] = this.delta(o.stats_week[this.date.getWeek() - 2], o.stats_week[this.date.getWeek() - 1]);
         o.labels = this.getLabels(campaign);
         o.keywords = this.getKeywords(campaign);
+        getCosts(campaign, o);
         o.groups = {};
         this._accounts[this.tmp.accountId][this.tmp.campaignId] = { object: campaign, groups: {} };
         this.accounts[this.tmp.accountId].campaigns[this.tmp.campaignId] = o;
@@ -163,7 +167,7 @@ var Ads = function () {
         i++;
         // Logger.log("campaign id: "+o.id)
       }
-      this.tmp.nbrCamapigns += i;
+      this.tmp.nbrCampaigns += i;
     }
   }, {
     key: "getGroupsFromCampaign",
@@ -201,6 +205,7 @@ var Ads = function () {
         o.stats_week_delta[this.date.getWeek()] = this.delta(o.stats_week[this.date.getWeek() - 2], o.stats_week[this.date.getWeek() - 1]);
         o.labels = this.getLabels(group);
         o.keywords = this.getKeywords(group);
+        getCosts(group, o);
         o.ads = {};
         this._accounts[this.tmp.accountId][this.tmp.campaignId][this.tmp.groupId] = { object: group, ads: {} };
         this.accounts[this.tmp.accountId].campaigns[this.tmp.campaignId].groups[this.tmp.groupId] = o;
@@ -235,9 +240,11 @@ var Ads = function () {
       sel = group.ads();
       ite = sel.withCondition("Status = ENABLED").get();
       while (ite.hasNext()) {
+        var _costs;
+
         ad = ite.next();
         this.tmp.adId = ad.getId();
-        o = {};
+        o = { costs: (_costs = {}, _defineProperty(_costs, this.date.getDate(), 0), _defineProperty(_costs, this.date.getWeek(), 0), _defineProperty(_costs, this.date.getMonth() + 1, 0), _costs) };
         o.id = ad.getId();
         o.accountId = this.tmp.accountId;
         o.campaignId = this.tmp.campaignId;
@@ -257,6 +264,7 @@ var Ads = function () {
         o.type = ad.getType();
         o.labels = this.getLabels(ad);
         //o.keywords = this.getKeywords(ad)
+        getCosts(ad, o);
         arr.push(o);
         this._accounts[this.tmp.accountId][this.tmp.campaignId][this.tmp.groupId][this.tmp.adId] = { object: ad, labels: o.labels };
         this.accounts[this.tmp.accountId].campaigns[this.tmp.campaignId].groups[this.tmp.groupId].ads[this.tmp.adId] = o;
@@ -552,8 +560,18 @@ var Ads = function () {
           aa,
           o = {};
       for (a in toObj) {
-        o[a] = toObj[a] - fromObj[a];
+        o[a] = (toObj[a] - fromObj[a]) / fromObj[a] * 100;
       }return o;
+    }
+  }, {
+    key: "getCosts",
+    value: function getCosts(adObject, o) {
+      var _costs2;
+
+      if (typeof o.costs == "undefined") o = { costs: (_costs2 = {}, _defineProperty(_costs2, this.date.getDate(), 0), _defineProperty(_costs2, this.date.getWeek(), 0), _defineProperty(_costs2, this.date.getMonth() + 1, 0), _costs2) };
+      o.costs[this.date.getDate()] += adObject.getStatsFor("TODAY").getCost();
+      o.costs[this.date.getWeek()] += adObject.getStatsFor("LAST_WEEK").getCost();
+      o.costs[this.date.getMonth() + 1] += adObject.getStatsFor("LAST_MONTH").getCost();
     }
   }, {
     key: "myDate",
