@@ -11,6 +11,7 @@ class Ads{
         option="full"
       }
 
+    this.option = option
     this.myDate();
     var d = new Date();
     this.date = d;
@@ -55,9 +56,9 @@ class Ads{
     this.campaigns[id].nbr = this.tmp.nbrCampaigns
     this.groups[id].nbr = this.tmp.nbrGroups
     this.ads[id].nbr = this.tmp.nbrAds
-    Logger.log("Le client '"+this.accounts[id].name+"' a: "+this.tmp.nbrCampaigns+" campagnes actives")
-    Logger.log("Le client '"+this.accounts[id].name+"' a: "+this.tmp.nbrGroups+" groupes d'annonces actives")
-    Logger.log("Le client '"+this.accounts[id].name+"' a: "+this.tmp.nbrAds+" annonces ad actives")
+    if(this.bool.campaigns)Logger.log("Le client '"+this.accounts[id].name+"' a: "+this.tmp.nbrCampaigns+" campagnes actives")
+    if(this.bool.groups)Logger.log("Le client '"+this.accounts[id].name+"' a: "+this.tmp.nbrGroups+" groupes d'annonces actives")
+    if(this.bool.ads)Logger.log("Le client '"+this.accounts[id].name+"' a: "+this.tmp.nbrAds+" annonces ad actives")
   }
   getAccount(accountId){
     // Logger.log("getAccount this.tmp.accountId: %s", this.tmp.accountId)
@@ -73,8 +74,16 @@ class Ads{
       o = {}
       o.id = account.getCustomerId()
       o.name = account.getName()
+      o.budget = 0
+      if(!this.bool.campaigns)o.budget = this.getBudget(account)
       o.stats = {}
+      d = new Date(d.setDate(d.getDate() - 2))
       o.stats[this.date.getYearDay()] = this.getStats(account)
+      o.stats[this.date.getYearDay()-1] = this.getStats(account, "YESTERDAY")
+      o.stats[this.date.getYearDay()-2] = this.getStats(account, d.getFullYear()+""+this.completedate(d.getMonth()+1)+""+this.completedate(d.getDate()-1), d.getFullYear()+""+this.completedate(d.getMonth()+1)+""+this.completedate(d.getDate()-2))
+      o.stats_delta = {}
+      o.stats_delta[this.date.getYearDay()] = this.delta(o.stats[this.date.getYearDay()-2], o.stats[this.date.getYearDay()-1])
+      d = new Date(), dd = new Date()
       d.setDay(0);dd.setDay(0);dd.setDate(dd.getDate() - 7)
       o.stats_week = {}
       o.stats_week[this.date.getWeek()-1] = this.getStats(account, d.getFullYear()+""+this.completedate(d.getMonth()+1)+""+this.completedate(d.getDate()), dd.getFullYear()+""+this.completedate(dd.getMonth()+1)+""+this.completedate(dd.getDate()))
@@ -82,11 +91,11 @@ class Ads{
       o.stats_week[this.date.getWeek()-2] = this.getStats(account, d.getFullYear()+""+this.completedate(d.getMonth()+1)+""+this.completedate(d.getDate()), dd.getFullYear()+""+this.completedate(dd.getMonth()+1)+""+this.completedate(dd.getDate()))
       o.stats_week_delta = {}
       o.stats_week_delta[this.date.getWeek()] = this.delta(o.stats_week[this.date.getWeek()-2], o.stats_week[this.date.getWeek()-1])
-      getCosts(account, o)
+      this.getCosts(account, o)
       o.campaigns = {}
       this._accounts[accountId] = {object: account, campaigns: {}}
       this.accounts[accountId] = o
-      this.accounts_[accountId] = {id: o.id, name: o.name, stats: o.stats, stats_week: o.stats_week, stats_week_delta: o.stats_week_delta}
+      this.accounts_[accountId] = {id: o.id, name: o.name, stats: o.stats, stats_week: o.stats_week, stats_week_delta: o.stats_week_delta, costs: o.costs, budget: o.budget}
       this._campaigns[accountId] = {}
       this.campaigns[accountId] = {}
       this.campaigns_[accountId] = {}
@@ -115,8 +124,17 @@ class Ads{
       o.id = campaign.getId()
       o.accountId = this.tmp.accountId
       o.name = campaign.getName()
+      o.budget = campaign.getBudget().getAmount()
+      Logger.log("------------------------")
+      Logger.log("budget: %s €", o.budget)
       o.stats = {}
+      d = new Date(d.setDate(d.getDate() - 2))
       o.stats[this.date.getYearDay()] = this.getStats(campaign)
+      o.stats[this.date.getYearDay()-1] = this.getStats(campaign, "YESTERDAY")
+      o.stats[this.date.getYearDay()-2] = this.getStats(campaign, d.getFullYear()+""+this.completedate(d.getMonth()+1)+""+this.completedate(d.getDate()-1), d.getFullYear()+""+this.completedate(d.getMonth()+1)+""+this.completedate(d.getDate()-2))
+      o.stats_delta = {}
+      o.stats_delta[this.date.getYearDay()] = this.delta(o.stats[this.date.getYearDay()-2], o.stats[this.date.getYearDay()-1])
+      d = new Date(), dd = new Date()
       d.setDay(0);dd.setDay(0);dd.setDate(dd.getDate() - 7)
       o.stats_week = {}
       o.stats_week[this.date.getWeek()-1] = this.getStats(campaign, d.getFullYear()+""+this.completedate(d.getMonth()+1)+""+this.completedate(d.getDate()), dd.getFullYear()+""+this.completedate(dd.getMonth()+1)+""+this.completedate(dd.getDate()))
@@ -126,19 +144,21 @@ class Ads{
       o.stats_week_delta[this.date.getWeek()] = this.delta(o.stats_week[this.date.getWeek()-2], o.stats_week[this.date.getWeek()-1])
       o.labels = this.getLabels(campaign)
       o.keywords = this.getKeywords(campaign)
-      getCosts(campaign, o)
+      this.getCosts(campaign, o)
       o.groups = {}
+      this.accounts_[this.tmp.accountId].budget += o.budget
       this._accounts[this.tmp.accountId][this.tmp.campaignId] = {object: campaign, groups: {}}
       this.accounts[this.tmp.accountId].campaigns[this.tmp.campaignId] = o
       this._campaigns[this.tmp.accountId][this.tmp.campaignId] = {object: campaign, groups: {}}
       this.campaigns[this.tmp.accountId][this.tmp.campaignId] = o
-      this.campaigns_[this.tmp.accountId][this.tmp.campaignId] = {id: o.id, accountId: o.accountId, name: o.name, keywords: o.keywords, stats: o.stats, stats_week: o.stats_week, stats_week_delta: o.stats_week_delta}
+      this.campaigns_[this.tmp.accountId][this.tmp.campaignId] = {id: o.id, accountId: o.accountId, name: o.name, keywords: o.keywords, stats: o.stats, stats_week: o.stats_week, stats_week_delta: o.stats_week_delta, costs: o.costs, budget: o.budget}
       this._groups[this.tmp.campaignId] = {}
       this.groups_[this.tmp.campaignId] = {}
       if(this.bool.groups)this.getGroupsFromCampaign(campaign)
       i++
       // Logger.log("campaign id: "+o.id)
     }
+    Logger.log("this.tmp.nbrCampaigns: %s\n i: %s", this.tmp.nbrCampaigns, i)
     this.tmp.nbrCampaigns += i
   }
   getGroupsFromCampaign(campaign){
@@ -157,7 +177,13 @@ class Ads{
       o.campaignId = this.tmp.campaignId
       o.name = group.getName()
       o.stats = {}
+      d = new Date(d.setDate(d.getDate() - 2))
       o.stats[this.date.getYearDay()] = this.getStats(group)
+      o.stats[this.date.getYearDay()-1] = this.getStats(group, "YESTERDAY")
+      o.stats[this.date.getYearDay()-2] = this.getStats(group, d.getFullYear()+""+this.completedate(d.getMonth()+1)+""+this.completedate(d.getDate()-1), d.getFullYear()+""+this.completedate(d.getMonth()+1)+""+this.completedate(d.getDate()-2))
+      o.stats_delta = {}
+      o.stats_delta[this.date.getYearDay()] = this.delta(o.stats[this.date.getYearDay()-2], o.stats[this.date.getYearDay()-1])
+      d = new Date(), dd = new Date()
       d.setDay(0);dd.setDay(0);dd.setDate(dd.getDate() - 7)
       o.stats_week = {}
       o.stats_week[this.date.getWeek()-1] = this.getStats(group, d.getFullYear()+""+this.completedate(d.getMonth()+1)+""+this.completedate(d.getDate()), dd.getFullYear()+""+this.completedate(dd.getMonth()+1)+""+this.completedate(dd.getDate()))
@@ -167,7 +193,7 @@ class Ads{
       o.stats_week_delta[this.date.getWeek()] = this.delta(o.stats_week[this.date.getWeek()-2], o.stats_week[this.date.getWeek()-1])
       o.labels = this.getLabels(group)
       o.keywords = this.getKeywords(group)
-      getCosts(group, o)
+      this.getCosts(group, o)
       o.ads = {}
       this._accounts[this.tmp.accountId][this.tmp.campaignId][this.tmp.groupId] = {object: group, ads: {}}
       this.accounts[this.tmp.accountId].campaigns[this.tmp.campaignId].groups[this.tmp.groupId] = o
@@ -175,13 +201,14 @@ class Ads{
       this.campaigns[this.tmp.accountId][this.tmp.campaignId].groups[this.tmp.groupId] = o
       this._groups[this.tmp.campaignId][this.tmp.groupId] = {object: group, ads: {}}
       this.groups[this.tmp.accountId][this.tmp.groupId] = o
-      this.groups_[this.tmp.accountId][this.tmp.groupId] = {id: o.id, accountId: o.accountId, campaignId: o.campaignId, name: o.name, keywords: o.keywords, stats: o.stats, stats_week: o.stats_week, stats_week_delta: o.stats_week_delta}
+      this.groups_[this.tmp.accountId][this.tmp.groupId] = {id: o.id, accountId: o.accountId, campaignId: o.campaignId, name: o.name, keywords: o.keywords, stats: o.stats, stats_week: o.stats_week, stats_week_delta: o.stats_week_delta, costs: o.costs}
       this._ads[this.tmp.groupId] = {}
       this.ads_[this.tmp.groupId] = {}
       if(this.bool.ads)this.getAdsFromGroup(group)
       i++
       // Logger.log("group id: "+o.id)
     }
+    Logger.log("this.tmp.nbrGroups: %s\n i: %s", this.tmp.nbrGroups, i)
     this.tmp.nbrGroups += i
   }
   getAdsFromGroup(group){
@@ -195,14 +222,21 @@ class Ads{
     while(ite.hasNext()){
       ad = ite.next();
       this.tmp.adId = ad.getId()
-      o = {costs: {[this.date.getDate()]: 0, [this.date.getWeek()]: 0, [this.date.getMonth()+1]: 0}}
+      //o = {costs: {[this.date.getDate()]: 0, [this.date.getWeek()]: 0, [this.date.getMonth()+1]: 0}}
+      o = {}
       o.id = ad.getId()
       o.accountId = this.tmp.accountId
       o.campaignId = this.tmp.campaignId
       o.groupId = this.tmp.groupId
       o.name = ad.getHeadline();
       o.stats = {}
+      d = new Date(d.setDate(d.getDate() - 2))
       o.stats[this.date.getYearDay()] = this.getStats(ad)
+      o.stats[this.date.getYearDay()-1] = this.getStats(ad, "YESTERDAY")
+      o.stats[this.date.getYearDay()-2] = this.getStats(ad, d.getFullYear()+""+this.completedate(d.getMonth()+1)+""+this.completedate(d.getDate()-1), d.getFullYear()+""+this.completedate(d.getMonth()+1)+""+this.completedate(d.getDate()-2))
+      o.stats_delta = {}
+      o.stats_delta[this.date.getYearDay()] = this.delta(o.stats[this.date.getYearDay()-2], o.stats[this.date.getYearDay()-1])
+      d = new Date(), dd = new Date()
       d.setDay(0);dd.setDay(0);dd.setDate(dd.getDate() - 7)
       o.stats_week = {}
       o.stats_week[this.date.getWeek()-1] = this.getStats(ad, d.getFullYear()+""+this.completedate(d.getMonth()+1)+""+this.completedate(d.getDate()), dd.getFullYear()+""+this.completedate(dd.getMonth()+1)+""+this.completedate(dd.getDate()))
@@ -215,7 +249,7 @@ class Ads{
       o.type = ad.getType();
       o.labels = this.getLabels(ad);
       //o.keywords = this.getKeywords(ad)
-      getCosts(ad, o)
+      this.getCosts(ad, o)
       arr.push(o)
       this._accounts[this.tmp.accountId][this.tmp.campaignId][this.tmp.groupId][this.tmp.adId] = {object: ad, labels: o.labels}
       this.accounts[this.tmp.accountId].campaigns[this.tmp.campaignId].groups[this.tmp.groupId].ads[this.tmp.adId] = o
@@ -225,10 +259,11 @@ class Ads{
       this.groups[this.tmp.accountId][this.tmp.groupId].ads[this.tmp.adId] = o
       this._ads[this.tmp.groupId][this.tmp.adId] = {object: ad, labels: o.labels}
       this.ads[this.tmp.accountId][this.tmp.adId] = o
-      this.ads_[this.tmp.accountId][this.tmp.adId] = {id: o.id, accountId: o.accountId, campaignId: o.campaignId, groupId: o.groupId, name: o.name, url: o.url, type: o.type, stats: o.stats, stats_week: o.stats_week, stats_week_delta: o.stats_week_delta}
+      this.ads_[this.tmp.accountId][this.tmp.adId] = {id: o.id, accountId: o.accountId, campaignId: o.campaignId, groupId: o.groupId, name: o.name, url: o.url, type: o.type, stats: o.stats, stats_week: o.stats_week, stats_week_delta: o.stats_week_delta, costs: o.costs}
       i++
       // Logger.log("ad id: "+o.id)
     }
+    Logger.log("this.tmp.nbrAds: %s\n i: %s", this.tmp.nbrAds, i)
     this.tmp.nbrAds += i
   }
   /***************************************************************************************************************************************************************************/
@@ -385,6 +420,41 @@ class Ads{
   /***************************************************************************************************************************************************************************/
   /******************************************GET STATISTICS FUNCTIONS**********************************************************************************************************/
   /***************************************************************************************************************************************************************************/
+  getBudget(adObject, period){
+    let a, budgetAmount = 0
+    if(typeof period == "undefined")period = "THIS_MONTH"
+    if(adObject.getEntityType() == "Account"){
+      AdsManagerApp.select(adObject);
+      //RECUPERER ICI TOUTES LES CAMPAGNES LIEES A CE COMPTE,
+      //PUIS CREER UN BOUCLE EN APPELANT this.getBudget() POUR CHACUNE DE CES CAMPAGNES
+      let budgetSelector = AdsApp
+         .budgets()
+         .forDateRange("THIS_MONTH")
+
+      let budgetIterator = budgetSelector.get();
+      while (budgetIterator.hasNext()) {
+        let budget = budgetIterator.next();
+        let campaigns = budget.campaigns().withCondition("Status = ENABLED").get()
+        while (campaigns.hasNext()){
+          let campaign = campaigns.next()
+          //Logger.log("BUDGETS::"+adObject.getName()+"::campaign.getName(): %s", campaign.getName())
+          budgetAmount += this.getBudget(campaign)
+        }
+      }
+      return budgetAmount
+    }else{
+      var amount = 0, budgetSelector = AdsApp
+         .budgets()
+         .forDateRange(period)
+
+      var budgetIterator = budgetSelector.get();
+      while (budgetIterator.hasNext()) {
+        var budget = budgetIterator.next();
+        amount += budget.getAmount()
+      }
+      return amount
+    }
+  }
   getStats(adObject, period, rangeTo){
       var tmp;
       if (typeof rangeTo == "undefined") {
@@ -465,10 +535,18 @@ class Ads{
   }
   getCosts(adObject, o){
     if(typeof o.costs == "undefined")
-      o = {costs: {[this.date.getDate()]: 0, [this.date.getWeek()]: 0, [this.date.getMonth()+1]: 0}}
-    o.costs[this.date.getDate()] += adObject.getStatsFor("TODAY").getCost()
-    o.costs[this.date.getWeek()] += adObject.getStatsFor("LAST_WEEK").getCost()
-    o.costs[this.date.getMonth() + 1] += adObject.getStatsFor("LAST_MONTH").getCost()
+      o.costs = {["today_"+(this.date.getDate()-1)]: 0, ["week_"+this.date.getWeek()-1]: 0, ["month_"+(this.date.getMonth()+1)]: 0}
+    o.costs["yesterday"] = adObject.getStatsFor("YESTERDAY").getCost()
+    o.costs["today_"+(this.date.getDate()-1)] += adObject.getStatsFor("TODAY").getCost()
+    o.costs["last7"] = adObject.getStatsFor("LAST_7_DAYS").getCost()
+    o.costs["week_"+(this.date.getWeek() - 1)] += adObject.getStatsFor("LAST_WEEK").getCost()
+    o.costs["thisWeek"] = adObject.getStatsFor("THIS_WEEK_MON_TODAY").getCost()
+    o.costs["month_"+(this.date.getMonth()+1)] += adObject.getStatsFor("LAST_MONTH").getCost()
+    o.costs["thisMonth"] = adObject.getStatsFor("THIS_MONTH").getCost()
+
+    //Logger.log("o.costs: %s", o.costs)
+
+    return o
   }
 
 
