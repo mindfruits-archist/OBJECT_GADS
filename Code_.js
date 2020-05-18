@@ -1,25 +1,63 @@
 class Ads{
-  constructor(ids, option){
+  constructor(ids, options){
     var tmp
-    if(typeof ids == "undefined")throw "Vous devez entrer un paramètre à la class Ads"
-    else if(typeof ids == "string")ids = [ids]
-    else if(!Array.isArray(ids))throw "Le paramètre de la class Ads doit être soit un string googleAds id, soit un array de googleAds id"
-    if(typeof option == 'undefined')option="full"
-    else
-      if(typeof option != "string"){
-        Logger.log("Le paramètre 'option' entré n'est pas valide, il a été mit par defaut à 'full'")
-        option="full"
-      }
+    if(typeof ids == "undefined")throw "Vous devez entrer au moins 1 paramètre à la class Ads (au moins 1 identifiant GAds)"
+    else if(typeof ids == "string"){
+      if(ids == "all")ids = getAllClients()//NOT TESTED YET
+      else if(ids == "qlqchose"){}//NOT TESTED YET
+      else ids = [ids]
+    }
+    else if(!Array.isArray(ids))throw "Le 1er paramètre de la class Ads doit être soit un string (googleAds ID), soit un array (de googleAds IDs)"
+    this.id = ids
+    if(typeof options == 'undefined'){
+      Logger.log("Le 2nd paramètre 'options' entré n'est pas valide, il a été mit par defaut à 'full'")
+      options="full"
+    }
+    else if(typeof options == 'object' || !Array.isArray(options)){
+      //CASE NOT USED YET
+    }
+    this.options = options
 
-    this.option = option
+    this.initGlobalVariables()
+
+    if(typeof options == "string"){
+      this.initVarsForFullReport()//NOT TESTED YET
+      switch(options){
+        case "full":break
+        case "accounts":case "account":this.bool.campaigns=false;this.bool.groups=false;this.bool.ads=false;break
+        case "campaigns":case "campaign":this.bool.groups=false;this.bool.ads=false;break
+        case "groups":case "group":this.bool.ads=false;break
+        case "ads":case "ad":break
+        case "none":this.bool = {accounts:false, campaigns:false, groups: false, ads: false};break
+        default:break
+      }
+      for(a in ids)if(this.bool.accounts){
+        this.getAll(ids[a])
+      }
+    }else{
+      if(options.wheatherScript || options.wheatherScript == ""){
+        this.weatherCampaignsList = this.getAllClients_weatherScript()
+      }
+      if(options.wheatherScript_){
+        this.weatherCampaignsDetails = this.getAllClients_weatherScript_(options.wheatherScript_)
+      }
+    }
+
+  }
+  initGlobalVariables(){
     this.myDate();
     var d = new Date();
     this.date = d;
+  }
+  /*********************************************************************************************************************************************/
+  /****************************************RECURSIVES FUNCTION FOR INITIALIZING THE ADS CLASS WITH ARGMENT options AS STRING*****************************************************************************/
+  /*********************************************************************************************************************************************/
+  /*********************************************************************************************************************************************/
+  initVarsForFullReport(){
     this.date_ = d.getDate() + '-' + d.getMonth() + '-' + d.getFullYear();
     this.bool = {accounts:true, campaigns:true, groups: true, ads: true}
-    this.id = ids
     this.tmp = {}
-    this.accounts = {nbr: ids.length}
+    this.accounts = {nbr: this.id.length}
     this.campaigns = {}
     this.groups = {}
     this.ads = {}
@@ -31,23 +69,7 @@ class Ads{
     this.campaigns_ = {}
     this.groups_ = {}
     this.ads_ = {}
-
-    switch(option){
-      case "full":break
-      case "accounts":case "account":this.bool.campaigns=false;this.bool.groups=false;this.bool.ads=false;break
-      case "campaigns":case "campaign":this.bool.groups=false;this.bool.ads=false;break
-      case "groups":case "group":this.bool.ads=false;break
-      case "ads":case "ad":break
-      default:break
-    }
-    for(a in ids){
-      this.getAll(ids[a])
-    }
   }
-  /*********************************************************************************************************************************************/
-  /****************************************RECURSIVES FUNCTION FOR INITIALIZING THE ADS CLASS*****************************************************************************/
-  /*********************************************************************************************************************************************/
-  /*********************************************************************************************************************************************/
   getAll(id){
     this.tmp.nbrCampaigns = 0
     this.tmp.nbrGroups = 0
@@ -91,7 +113,7 @@ class Ads{
       o.stats_week[this.date.getWeek()-2] = this.getStats(account, d.getFullYear()+""+this.completedate(d.getMonth()+1)+""+this.completedate(d.getDate()), dd.getFullYear()+""+this.completedate(dd.getMonth()+1)+""+this.completedate(dd.getDate()))
       o.stats_week_delta = {}
       o.stats_week_delta[this.date.getWeek()] = this.delta(o.stats_week[this.date.getWeek()-2], o.stats_week[this.date.getWeek()-1])
-      this.getCosts(account, o)
+      o.costs = this.getCosts(account)
       o.campaigns = {}
       this._accounts[accountId] = {object: account, campaigns: {}}
       this.accounts[accountId] = o
@@ -144,7 +166,7 @@ class Ads{
       o.stats_week_delta[this.date.getWeek()] = this.delta(o.stats_week[this.date.getWeek()-2], o.stats_week[this.date.getWeek()-1])
       o.labels = this.getLabels(campaign)
       o.keywords = this.getKeywords(campaign)
-      this.getCosts(campaign, o)
+      o.costs = this.getCosts(campaign)
       o.groups = {}
       this.accounts_[this.tmp.accountId].budget += o.budget
       this._accounts[this.tmp.accountId][this.tmp.campaignId] = {object: campaign, groups: {}}
@@ -193,7 +215,7 @@ class Ads{
       o.stats_week_delta[this.date.getWeek()] = this.delta(o.stats_week[this.date.getWeek()-2], o.stats_week[this.date.getWeek()-1])
       o.labels = this.getLabels(group)
       o.keywords = this.getKeywords(group)
-      this.getCosts(group, o)
+      o.costs = this.getCosts(group)
       o.ads = {}
       this._accounts[this.tmp.accountId][this.tmp.campaignId][this.tmp.groupId] = {object: group, ads: {}}
       this.accounts[this.tmp.accountId].campaigns[this.tmp.campaignId].groups[this.tmp.groupId] = o
@@ -249,7 +271,7 @@ class Ads{
       o.type = ad.getType();
       o.labels = this.getLabels(ad);
       //o.keywords = this.getKeywords(ad)
-      this.getCosts(ad, o)
+      o.costs = this.getCosts(ad)
       arr.push(o)
       this._accounts[this.tmp.accountId][this.tmp.campaignId][this.tmp.groupId][this.tmp.adId] = {object: ad, labels: o.labels}
       this.accounts[this.tmp.accountId].campaigns[this.tmp.campaignId].groups[this.tmp.groupId].ads[this.tmp.adId] = o
@@ -269,7 +291,8 @@ class Ads{
   /***************************************************************************************************************************************************************************/
   /*****************************************GET OBJECTS OR IDS FROM ID(S)***********************************************************************************************************/
   /***************************************************************************************************************************************************************************/
-  /******************************************GET OBJECTS FROM IDS ARRAY**************************************************************************************************************/
+
+  /******************************************GET OBJECTS-CHILDREN FROM OBJECT-PARENT'S IDS ARRAY**************************************************************************************************************/
   getAccountsFromAccountIds(accountId){
     if(typeof accountId == "undefined")throw "Vous devez entrer un array d'ids en 2nd argument"
     else if(typeof accountId == "string")accountId = [accountId]
@@ -328,7 +351,7 @@ class Ads{
     }
     return o
   }
-  /***************************************GET OBJECTS CHILDREN FROM ID******************************************************************************************************************/
+  /***************************************GET OBJECTS-CHILDREN FROM OBJECT-PARENT'S ID******************************************************************************************************************/
   getCampaignsFromAccountId(accountId){
     if(typeof accountId == "undefined" && accountId.indexOf('-') == -1)throw "Vous devez entrer un numéro de compte Ads en 1er argument"
     else if(typeof accountId == "string")accountId = [accountId]
@@ -375,7 +398,7 @@ class Ads{
     }
     return o
   }
-  /******************************************GET IDS CHILDREN FROM ID********************************************************************************************************************/
+  /******************************************GET OBJECTS-CHILDRENs IDS FROM PARENT-OBJECT'S ID********************************************************************************************************************/
   getCampaignsIdsFromAccountId(accountId){
     if(typeof accountId == "undefined" && accountId.indexOf('-') == -1)throw "Vous devez entrer un numéro de compte Ads en 1er argument"
     else if(typeof accountId == "string")accountId = [accountId]
@@ -418,7 +441,7 @@ class Ads{
   }
   /***************************************************************************************************************************************************************************/
   /***************************************************************************************************************************************************************************/
-  /******************************************GET STATISTICS FUNCTIONS**********************************************************************************************************/
+  /******************************************GET STATISTICS DATAS**********************************************************************************************************/
   /***************************************************************************************************************************************************************************/
   getBudget(adObject, period){
     let a, budgetAmount = 0
@@ -533,7 +556,8 @@ class Ads{
       o[a] = ((toObj[a] - fromObj[a])/fromObj[a])*100
     return o
   }
-  getCosts(adObject, o){
+  getCosts(adObject/*, o*/){
+    /*
     if(typeof o.costs == "undefined")
       o.costs = {["today_"+(this.date.getDate()-1)]: 0, ["week_"+this.date.getWeek()-1]: 0, ["month_"+(this.date.getMonth()+1)]: 0}
     o.costs["yesterday"] = adObject.getStatsFor("YESTERDAY").getCost()
@@ -543,13 +567,155 @@ class Ads{
     o.costs["thisWeek"] = adObject.getStatsFor("THIS_WEEK_MON_TODAY").getCost()
     o.costs["month_"+(this.date.getMonth()+1)] += adObject.getStatsFor("LAST_MONTH").getCost()
     o.costs["thisMonth"] = adObject.getStatsFor("THIS_MONTH").getCost()
+    */
+    var o ={["today_"+(this.date.getDate()-1)]: 0, ["week_"+this.date.getWeek()-1]: 0, ["month_"+(this.date.getMonth()+1)]: 0}
+    o["yesterday"] = adObject.getStatsFor("YESTERDAY").getCost()
+    o["today_"+(this.date.getDate()-1)] += adObject.getStatsFor("TODAY").getCost()
+    o["last7"] = adObject.getStatsFor("LAST_7_DAYS").getCost()
+    o["week_"+(this.date.getWeek() - 1)] += adObject.getStatsFor("LAST_WEEK").getCost()
+    o["thisWeek"] = adObject.getStatsFor("THIS_WEEK_MON_TODAY").getCost()
+    o["month_"+(this.date.getMonth()+1)] += adObject.getStatsFor("LAST_MONTH").getCost()
+    o["thisMonth"] = adObject.getStatsFor("THIS_MONTH").getCost()
 
     //Logger.log("o.costs: %s", o.costs)
 
     return o
   }
 
+  /*********************************************************************************************************************************************/
+  /********************************GET ALL (CLIENT'S) DESIRED ENTITY***************************************/
+  /*********************************************************************************************************************************************/
+  /*********************************************************************************************************************************************/
+  getAllThat(account, that, conditions){
+    var a, array = [], thatAvailablesValues = ["accounts", "campaigns", "adGroups", "ads", "keywords", "labels", ]
+    if(typeof conditions == "undefined")conditions = [{withCondition: "Status = ENABLED"}]
+    else if(!Array.isArray(conditions))throw"1:Dans la fonction 'getAllThat', la valeur '"+conditions+"' pour l'argument 'conditions' doit être un array d'objets (conditions = [{},{},..])"
+    else if(typeof conditions[0] != "object" || Array.isArray(conditions[0]))throw"2:Dans la fonction 'getAllThat', la valeur '"+conditions+"' pour l'argument 'conditions' doit être un array d'objets (conditions = [{},{},..])"
+    if(typeof that == "undefined")throw"L'appel à la fonction 'getAllThat' a second argument 'that' OBLIGATOIRE"
+    else if(thatAvailablesValues.indexOf(that) == -1)throw"Dans la fonction 'getAllThat', la valeur '"+that+"' pour l'argument 'that' n'existe pas.\nVeuillez svp choisir pour l'argument 'that' une des valeurs suivantes: "+thatAvailablesValues+"."
+    AdsManagerApp.select(account);
+    var selector = AdsApp[that]()
+    for(a in conditions)selector[a](conditions[a])
+    var iterator = selector.get();
+    while (iterator.hasNext())
+      array.push(iterator.next())
+    return array
+  }
+  getAllClients(){
+    var array = []
+    var accountSelector = AdsManagerApp
+      .accounts()
+    var accountIterator = accountSelector.get();
+    while (accountIterator.hasNext())
+      array.push(accountIterator.next())
+    return array
+  }
+  getAllCampaigns(account){
+    var array = []
+    AdsManagerApp.select(account);
+    var campaignSelector = AdsApp
+         .campaigns()
+         .withCondition("Status = ENABLED")
 
+     var campaignIterator = campaignSelector.get();
+     while (campaignIterator.hasNext())
+       array.push(campaignIterator.next())
+     return array
+  }
+  getAllGroups(account){
+    var array = []
+    AdsManagerApp.select(account);
+    var groupSelector = AdsApp
+         .adGroups()
+         .withCondition("Status = ENABLED")
+
+     var groupIterator = groupSelector.get();
+     while (groupIterator.hasNext())
+       array.push(groupIterator.next())
+     return array
+  }
+  getAllAds(account){
+    var array = []
+    AdsManagerApp.select(account);
+    var adSelector = AdsApp
+         .ads()
+         .withCondition("Status = ENABLED")
+
+     var adIterator = adSelector.get();
+     while (adIterator.hasNext())
+       array.push(adIterator.next())
+     return array
+  }
+  getAllKeywords(account){
+    var array = []
+    AdsManagerApp.select(account);
+    var keywordSelector = AdsApp
+         .keywords()
+         .withCondition("Status = ENABLED")
+
+     var keywordIterator = keywordSelector.get();
+     while (keywordIterator.hasNext())
+       array.push(keywordIterator.next())
+     return array
+  }
+  getAllLabels(account){
+    var array = []
+    AdsManagerApp.select(account);
+    var labelSelector = AdsApp
+         .labels()
+         .withCondition("Status = ENABLED")
+
+     var labelIterator = labelSelector.get();
+     while (labelIterator.hasNext())
+       array.push(labelIterator.next())
+     return array
+  }
+  /******************************************GET ATTRIBUTE(S) FROM ADS ENTITIES********************************************************************************************************************/
+  getEntitiesAttribute(entities, attribute){
+    if(typeof entities != "object")throw"Dans la fonction 'getEntitiesName', l'argument 'entities' entré est incorrect (valeur entrée: "+entities+")\n'entities' est sensé être un array de GAdsEntities (cependant il peut simplement être un GAdsEntities)"
+    else if((typeof entities == "object" && !Array.isArray(entities)))entities = [entities]
+    if(typeof attribute == "undefined" || typeof attribute != "string")throw"Dans la fonction 'getEntitiesName', l'argument 'attribute' entré est incorrect (valeur entrée: "+attribute+")\n'attribute' est de type string"
+    var a, array = []
+    for(a in entities)array.push(entities[a][attribute]())
+    return array
+  }
+  getEntitiesAttributePersonalized0(entities){
+    if(typeof entities != "object")throw"Dans la fonction 'getEntitiesName', l'argument 'entities' entré est incorrect (valeur entrée: "+entities+")\n'entities' est sensé être un array de GAdsEntities (cependant il peut simplement être un GAdsEntities)"
+    else if((typeof entities == "object" && !Array.isArray(entities)))entities = [entities]
+    var a, array = []
+    for(a in entities)array.push(entities[a].getId()+": "+(entities[a].getName() || entities[a].getText()))
+    return array
+  }
+
+  /*********************************************************************************************************************************************/
+  /********************************GET ALL CLIENT'S IDS AND NAMES WITH THERE ASSOCIATED ACTIVED CAMPAIGNS***************************************/
+  /*********************************************************************************************************************************************/
+  /*********************************************************************************************************************************************/
+  getAllClients_weatherScript(){
+    var a, array = []
+    var clients = this.getAllClients()
+    Logger.log(clients.length+" ID clients ont été récupéré. Préparation de l'output..")
+    for(a in clients){
+      array.push({id:clients[a].getCustomerId(), name: clients[a].getName(), campaigns: this.getEntitiesAttributePersonalized0(this.getAllCampaigns(clients[a]))})
+      Logger.log((parseInt(a)+1)+"/"+clients.length+" clients traités")
+    }
+    return array
+  }
+  getAllClients_weatherScript_(obj){
+    var a, array = [], campaigns, output = []
+    for(a in obj){
+      campaigns = this.getCampaignsFromAccountId(a)
+      for(aa in obj[a])
+        for(aaa in campaigns)
+          if(campaigns[aaa].getName() == obj[a][aa])
+          array.push(campaigns[aaa])
+    }
+    Logger.log("UNE VALEUR(le label) A ETE ENLEVE DE L'OUPUT, CAR IL PRODUISAIT UNE ERREUR\nIL FAUDRA SONGER A REMETTRE CETTE VALEUR(meme si cela n'impacte que le script 'weather')")
+    for(a in array)
+      output.push({name: array[a].getName(), stats: this.getStats(array[a]), budget: this.getBudget(array[a]), keywords: this.getKeywords(array[a]),  /*labels: this.getLabels(array[a]), */costs: this.getCosts(array[a])})
+
+    return output
+  }
 
 
 
@@ -647,7 +813,7 @@ class Ads{
     }
   }
   completedate(time) {
-      if (time < 10) time = "0" + String(time);
-      return time;
-    }
+    if (time < 10) time = "0" + String(time);
+    return time;
+  }
 }
