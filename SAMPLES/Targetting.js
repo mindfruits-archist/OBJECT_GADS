@@ -14,7 +14,7 @@ class Targetting extends Own{
   /*Ad Schedules******************************************************************************************/
   /************************************************************************************************************************/
   //Add ad schedules for a campaign
-  function addAdSchedule() {
+  function addAdSchedule(config) {
     var theIterator = this.addCondition(this.getTheIterator(config.condition), config)
     var resp = this.getResults(theIterator, {excludedLocations: {add: {geoCode: config.excludedLocations.geoCode}}})
     resp.entity.addAdSchedule({
@@ -27,7 +27,7 @@ class Targetting extends Own{
     });
   }
   //Get ad schedules for a campaign
-  function getAdSchedules() {
+  function getAdSchedules(config) {
     var theIterator = this.addCondition(this.getTheIterator(config.condition), config)
     return this.getResults(theIterator, {adSchedules: true})
   }
@@ -43,7 +43,7 @@ class Targetting extends Own{
   /*Excluded Locations******************************************************************************************/
   /************************************************************************************************************************/
   //Add excluded locations for a campaign
-  function excludeLocationTarget() {
+  function excludeLocationTarget(config) {
     var theIterator = this.addCondition(this.getTheIterator(config.condition), config)
     return this.getResults(theIterator, {excludedLocations: {add: {geoCode: config.excludedLocations.geoCode}}})
   }
