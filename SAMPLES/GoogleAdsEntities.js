@@ -191,72 +191,49 @@ class GoogleAdsEntities extends Own{
   /*Ad Groups******************************************************************************************/
   /************************************************************************************************************************/
   //Add an ad group
-  addAdGroup() {
-    var campaignIterator = AdsApp.campaigns()
-        .withCondition('Name = "INSERT_CAMPAIGN_NAME_HERE"')
-        .get();
+  addAdGroup(config) {
+    console.log("addAdGroup:needed: !config.condition''!, !config.withName!, !config.withCpc!");
+    var campaignIterator = this.addCondition(AdsApp.campaigns(), config.condition)
     if (campaignIterator.hasNext()) {
       var campaign = campaignIterator.next();
       var adGroupOperation = campaign.newAdGroupBuilder()
-          .withName('INSERT_ADGROUP_NAME_HERE')
-          .withCpc(1.2)
+          .withName(config.withName)
+          .withCpc(config.withCpc)
           .build();
     }
   }
   //Update an ad group
-  updateAdGroup() {
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
+  updateAdGroup(config) {
+    console.log("updateAdGroup:needed: !config.condition''!, !config.setCpc!");
+    var adGroupIterator = this.addCondition(AdsApp.adGroups(), config.condition)
     if (adGroupIterator.hasNext()) {
       var adGroup = adGroupIterator.next();
-      adGroup.bidding().setCpc(1.2);
+      adGroup.bidding().setCpc(config.setCpc);
       // update other properties as required here
     }
   }
   //Get all ad groups
   getAlladGroups() {
+    console.log("getAlladGroups: NO ARGUMENT NEEDED")
     // AdsApp.adGroups() will return all ad groups that are not removed by
     // default.
-    var adGroupIterator = AdsApp.adGroups().get();
-    Logger.log('Total adGroups found : ' + adGroupIterator.totalNumEntities());
-    while (adGroupIterator.hasNext()) {
-      var adGroup = adGroupIterator.next();
-      Logger.log('AdGroup Name: ' + adGroup.getName());
-    }
+    return this.getResults(aAdsApp.adGroups().get())
   }
   //Get an ad group by name
-  getAdGroupByName() {
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (adGroupIterator.hasNext()) {
-      var adGroup = adGroupIterator.next();
-      Logger.log('AdGroup Name: ' + adGroup.getName());
-      Logger.log('Enabled: ' + adGroup.isEnabled());
-    }
+  getAdGroupByName(config) {
+    console.log("getAdGroupByName:needed: !config.condition''!");
+    return this.getResults(this.addCondition(AdsApp.adGroups(), 'Name = "'+config.condition+'"'))
   }
   //Get an ad group's stats
-  getadGroupstats() {
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (adGroupIterator.hasNext()) {
-      var adGroup = adGroupIterator.next();
-      // You can also request reports for pre-defined date ranges. See
-      // https://developers.google.com/adwords/api/docs/guides/awql,
-      // DateRangeLiteral section for possible values.
-      var stats = adGroup.getStatsFor('LAST_MONTH');
-      Logger.log(adGroup.getName() + ', ' + stats.getClicks() + ', ' +
-          stats.getImpressions());
-    }
+  getadGroupstats(config) {
+    console.log("getadGroupstats:needed: !config.condition''!");
+    return this.getResults(this.addCondition(AdsApp.adGroups(), 'Name = "'+config.condition+'"'), {stats: config.dateRange})
   }
   //Pause an ad group
-  pauseAdGroup() {
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (adGroupIterator.hasNext()) {
+  pauseAdGroup(config) {
+    console.log("pauseAdGroup:needed: !config.condition''!");
+    var adGroupIterator = this.addCondition(AdsApp.adGroups(), config.condition)
+    while (adGroupIterator.hasNext()) {
       var adGroup = adGroupIterator.next();
       adGroup.pause();
       Logger.log('AdGroup with name = ' + adGroup.getName() +
@@ -264,11 +241,10 @@ class GoogleAdsEntities extends Own{
     }
   }
   //Get an ad group's device bid modifiers
-  getAdGroupBidModifiers() {
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (adGroupIterator.hasNext()) {
+  getAdGroupBidModifiers(config) {
+    console.log("getAdGroupBidModifiers:needed: !config.condition''!");
+    var arr = [], adGroupIterator = this.addCondition(AdsApp.adGroups(), config.condition)
+    while (adGroupIterator.hasNext()) {
       var adGroup = adGroupIterator.next();
       Logger.log('AdGroup name: ' + adGroup.getName());
       Logger.log('Mobile bid modifier: ' +
@@ -277,14 +253,17 @@ class GoogleAdsEntities extends Own{
           adGroup.devices().getTabletBidModifier());
       Logger.log('Desktop bid modifier: ' +
           adGroup.devices().getDesktopBidModifier());
+      arr.push({entity: adGroup, mobile: adGroup.devices().getMobileBidModifier(), tablet: adGroup.devices().getTabletBidModifier(), desktop:adGroup.devices().getDesktopBidModifier()})
     }
+    return arr
   }
   /*---end-***************************************************************************************************************/
   /************************************************************************************************************************/
   /*Ad Params******************************************************************************************/
   /************************************************************************************************************************/
   //Create text ad with ad parameters for an ad group
-  setupAdParamsInAdGroup() {
+  setupAdParamsInAdGroup(config) {
+    console.log("setupAdParamsInAdGroup:needed: !config.condition''!, !config.setAdParam[]!, !config.withHeadlinePart1''!, !config.withHeadlinePart2''!, !config.withDescription''!, !config.withFinalUrl''!");
     // If you have multiple adGroups with the same name, this snippet will
     // pick an arbitrary matching ad group each time. In such cases, just
     // filter on the campaign name as well:
@@ -292,20 +271,19 @@ class GoogleAdsEntities extends Own{
     // AdsApp.adGroups()
     //     .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
     //     .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (adGroupIterator.hasNext()) {
+    var adGroupIterator = this.addCondition(AdsApp.adGroups(), config.condition), arr = [], obj
+    while (adGroupIterator.hasNext()) {
+      obj = {}
       adGroup = adGroupIterator.next();
 
       adGroup.newAd().expandedTextAdBuilder()
-          .withHeadlinePart1('Holiday sale')
-          .withHeadlinePart2(
-              'Starts in {param1: a few} days {param2: and} hours!')
-          .withDescription('Everything must go!')
-          .withFinalUrl('http://www.example.com/holidaysales')
+          .withHeadlinePart1(config.withHeadlinePart1)
+          .withHeadlinePart2(config.withHeadlinePart2)
+          .withDescription(config.withDescription)
+          .withFinalUrl(config.withFinalUrl)
           .build();
-
+      obj.entitys = adGroup
+      obj.keywords = []
       var keywordIterator = adGroup.keywords().get();
       if (keywordIterator.hasNext()) {
         keyword = keywordIterator.next();
@@ -313,13 +291,20 @@ class GoogleAdsEntities extends Own{
         // using this keyword. If the ad is triggered using a keyword
         // without ad param, the ad shows as
         // 'Doors open in a few days, and hours!'
-        keyword.setAdParam(1, 5);
-        keyword.setAdParam(2, 7);
+        var i = 1
+        for(a in config.setAdParam){
+          keyword.setAdParam(i, config.setAdParam[a]);
+          i++
+        }
+        obj.keywords.push(keyword)
       }
+      arr.push(obj)
     }
+    return arr
   }
   //Get ad parameters for a keyword
-  getAdParamsForKeyword() {
+  getAdParamsForKeyword(config) {
+    console.log("getAdParamsForKeyword:needed: !config.condition''!, !config.keywords.condition[]!");
     // If you have multiple adGroups with the same name, this snippet will
     // pick an arbitrary matching ad group each time. In such cases, just
     // filter on the campaign name as well:
@@ -327,23 +312,21 @@ class GoogleAdsEntities extends Own{
     // AdsApp.adGroups()
     //     .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
     //     .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (adGroupIterator.hasNext()) {
+    var adGroupIterator = this.addCondition(AdsApp.adGroups(), config.condition)
+    while (adGroupIterator.hasNext()) {
       adGroup = adGroupIterator.next();
-      var keywordIterator = adGroup.keywords()
-          .withCondition('Text = "Holiday sales"')
-          .get();
+      var keywordIterator = this.addCondition(adGroup.keywords(), config.keywords.condition), arr = []
       if (keywordIterator.hasNext()) {
         keyword = keywordIterator.next();
         var adParamIterator = keyword.adParams().get();
         while (adParamIterator.hasNext()) {
           var adParam = adParamIterator.next();
-          logAdParam(adParam);
+          arr.push(adParam)
+          this.logAdParam(adParam);
         }
       }
     }
+    return arr
   }
 
   logAdParam(adParam) {
@@ -357,7 +340,8 @@ class GoogleAdsEntities extends Own{
   /*Ads******************************************************************************************/
   /************************************************************************************************************************/
   //Add an expanded text ad
-  addExpandedTextAd() {
+  addExpandedTextAd(config) {
+    console.log("addExpandedTextAd:needed: !config.condition''!, !config.withHeadlinePart1''!, !config.withHeadlinePart2''!, !config.withDescription''!, !config.withPath1''!, !config.withPath2''!, !config.withFinalUrl''!");
     // If you have multiple adGroups with the same name, this snippet will
     // pick an arbitrary matching ad group each time. In such cases, just
     // filter on the campaign name as well:
@@ -365,26 +349,30 @@ class GoogleAdsEntities extends Own{
     // AdsApp.adGroups()
     //     .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
     //     .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (adGroupIterator.hasNext()) {
+    var adGroupIterator = this.addCondition(AdsApp.adGroups(), config.condition), arr = []
+    while (adGroupIterator.hasNext()) {
       var adGroup = adGroupIterator.next();
-      adGroup.newAd().expandedTextAdBuilder()
-          .withHeadlinePart1('First headline of ad')
-          .withHeadlinePart2('Second headline of ad')
-          .withDescription('Ad description')
-          .withPath1('path1')
-          .withPath2('path2')
-          .withFinalUrl('http://www.example.com')
+      var ad = adGroup.newAd().expandedTextAdBuilder()
+          .withHeadlinePart1(config.withHeadlinePart1)
+          .withHeadlinePart2(config.withHeadlinePart2 || "")
+          .withHeadlinePart3(config.withHeadlinePart3 || "")
+          .withDescription(config.withDescription)
+          .withDescription1(config.withDescription1 || "")
+          .withDescription2(config.withDescription2 || "")
+          .withFinalUrl(config.withFinalUrl)
+          .withPath1(config.withPath1)
+          .withPath2(config.withPath2 || "")
           .build();
       // ExpandedTextAdBuilder has additional options.
       // For more details, see
       // https://developers.google.com/google-ads/scripts/docs/reference/adsapp/adsapp_expandedtextadbuilder
+      arr.push({adGroup: adGroup, ad: ad})
     }
+    return arr
   }
   //Add an image ad
-  addImageAd() {
+  addImageAd(config) {
+    console.log("addImageAd:needed: !config.condition''!, !config.media.condition''!, !config.withName''!, !config.withDisplayUrl''!, !config.withFinalUrl''!");
     // If you have multiple adGroups with the same name, this snippet will
     // pick an arbitrary matching ad group each time. In such cases, just
     // filter on the campaign name as well:
@@ -392,28 +380,29 @@ class GoogleAdsEntities extends Own{
     // AdsApp.adGroups()
     //     .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
     //     .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
+    var adGroupIterator = this.addCondition(AdsApp.adGroups(), config.condition), arr = []
     var mediaIterator = AdsApp.adMedia().media()
-        .withCondition('Name = "INSERT_IMAGE_NAME_HERE"')
+        .withCondition(config.media.condition)
         .get();
-    if (adGroupIterator.hasNext() && mediaIterator.hasNext()) {
+    while (adGroupIterator.hasNext() && mediaIterator.hasNext()) {
       var adGroup = adGroupIterator.next();
       var image = mediaIterator.next();
-      adGroup.newAd().imageAdBuilder()
-          .withName('Ad name')
+      var ad = adGroup.newAd().imageAdBuilder()
+          .withName(config.withName)
           .withImage(image)
-          .withDisplayUrl('http://www.example.com')
-          .withFinalUrl('http://www.example.com')
+          .withDisplayUrl(config.withDisplayUrl)
+          .withFinalUrl(config.withFinalUrl)
           .build();
       // ImageAdBuilder has additional options.
       // For more details, see
       // https://developers.google.com/google-ads/scripts/docs/reference/adsapp/adsapp_imageadbuilder
+      arr.push({adGroup: adGroup, image: image, ad: ad})
     }
+    return arr
   }
   //Add an HTML5 ad
-  addHtml5Ad() {
+  addHtml5Ad(config) {
+    console.log("addHtml5Ad:needed: !config.condition''!, !config.media.condition''!, !config.withName''!, !config.withEntryPoint''!, !config.withDimensions''!, !config.withDisplayUrl''!, !config.withFinalUrl''!");
     // If you have multiple adGroups with the same name, this snippet will
     // pick an arbitrary matching ad group each time. In such cases, just
     // filter on the campaign name as well:
@@ -421,30 +410,31 @@ class GoogleAdsEntities extends Own{
     // AdsApp.adGroups()
     //     .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
     //     .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
+    var adGroupIterator = this.addCondition(AdsApp.adGroups(), config.condition), arr = []
     var mediaIterator = AdsApp.adMedia().media()
-        .withCondition('Name = "INSERT_MEDIA_BUNDLE_NAME_HERE"')
+        .withCondition(config.media.condition)
         .get();
-    if (adGroupIterator.hasNext() && mediaIterator.hasNext()) {
+    while (adGroupIterator.hasNext() && mediaIterator.hasNext()) {
       var adGroup = adGroupIterator.next();
       var mediaBundle = mediaIterator.next();
-      adGroup.newAd().html5AdBuilder()
-          .withName('Ad name')
-          .withMediaBundle(mediaBundle)
-          .withEntryPoint('someDirectory/index.html')
-          .withDimensions('300x250')
-          .withDisplayUrl('http://www.example.com')
-          .withFinalUrl('http://www.example.com')
+      var ad = adGroup.newAd().html5AdBuilder()
+          .withName(config.withName)
+          .withImage(mediaBundle)
+          .withEntryPoint(config.withEntryPoint)
+          .withDimensions(config.withDimensions)
+          .withDisplayUrl(config.withDisplayUrl)
+          .withFinalUrl(config.withFinalUrl)
           .build();
       // HTML5AdBuilder has additional options.
       // For more details, see
       // https://developers.google.com/google-ads/scripts/docs/reference/adsapp/adsapp_html5adbuilder
+      arr.push({adGroup: adGroup, mediaBundle: mediaBundle, ad: ad})
     }
+    return arr
   }
   //Add a Gmail image ad
-  addGmailImageAd() {
+  addGmailImageAd(config) {
+    console.log("addGmailImageAd:needed: !config.condition''!, !config.media.condition''!, !config.logo.condition''!, !config.withName''!, !config.withAdvertiser''!, !config.withSubject''!, !config.withDescription''!, !config.withDisplayUrl''!, !config.withFinalUrl''!");
     // If you have multiple adGroups with the same name, this snippet will
     // pick an arbitrary matching ad group each time. In such cases, just
     // filter on the campaign name as well:
@@ -452,38 +442,35 @@ class GoogleAdsEntities extends Own{
     // AdsApp.adGroups()
     //     .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
     //     .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    var logoMediaIterator = AdsApp.adMedia().media()
-        .withCondition('Name = "INSERT_LOGO_IMAGE_NAME_HERE"')
-        .get();
-    var imageMediaIterator = AdsApp.adMedia().media()
-        .withCondition('Name = "INSERT_IMAGE_NAME_HERE"')
-        .get();
-    if (adGroupIterator.hasNext() &&
+    var adGroupIterator = this.addCondition(AdsApp.adGroups(), config.condition), arr = []
+    var logoMediaIterator = this.addCondition(AdsApp.adMedia().media(), config.logo.condition)
+    var imageMediaIterator = this.addCondition(AdsApp.adMedia().media(), config.media.condition)
+    while (adGroupIterator.hasNext() &&
         logoMediaIterator.hasNext() &&
         imageMediaIterator.hasNext()) {
       var adGroup = adGroupIterator.next();
       var logo = logoMediaIterator.next();
       var image = imageMediaIterator.next();
-      adGroup.newAd().gmailImageAdBuilder()
-          .withName('Ad name')
-          .withAdvertiser('Advertiser')
-          .withSubject('Subject')
-          .withDescription('Description')
+      var ad = adGroup.newAd().gmailImageAdBuilder()
+          .withName(config.withName)
+          .withAdvertiser(config.withAdvertiser)
+          .withSubject(config.withSubject)
+          .withDescription(config.withDescription)
           .withLogo(logo)
           .withImage(image)
-          .withFinalUrl('http://www.example.com')
-          .withDisplayUrl('http://www.example.com')
+          .withFinalUrl(config.withFinalUrl)
+          .withDisplayUrl(config.withDisplayUrl)
           .build();
       // GmailImageAdBuilder has additional options.
       // For more details, see
       // https://developers.google.com/google-ads/scripts/docs/reference/adsapp/adsapp_gmailimageadbuilder
+      arr.push({adGroup: adGroup, logo: logo, image: image, ad : ad})
     }
+    return arr
   }
   //Add a Gmail single promotion ad
-  addGmailSinglePromotionAd() {
+  addGmailSinglePromotionAd(config) {
+    console.log("addGmailSinglePromotionAd:needed: !config.condition''!, !config.media.condition''!, !config.logo.condition''!, !config.withName''!, !config.withContent''!, !config.withHeadline''!, !config.withAdvertiser''!, !config.withSubject''!, !config.withDescription''!, !config.withCallToAction''!, !config.withDisplayUrl''!, !config.withFinalUrl''!");
     // If you have multiple adGroups with the same name, this snippet will
     // pick an arbitrary matching ad group each time. In such cases, just
     // filter on the campaign name as well:
@@ -491,41 +478,38 @@ class GoogleAdsEntities extends Own{
     // AdsApp.adGroups()
     //     .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
     //     .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    var logoMediaIterator = AdsApp.adMedia().media()
-        .withCondition('Name = "INSERT_LOGO_IMAGE_NAME_HERE"')
-        .get();
-    var imageMediaIterator = AdsApp.adMedia().media()
-        .withCondition('Name = "INSERT_IMAGE_NAME_HERE"')
-        .get();
+    var adGroupIterator = this.addCondition(AdsApp.adGroups(), config.condition), arr = []
+    var logoMediaIterator = this.addCondition(AdsApp.adMedia().media(), config.logo.condition)
+    var imageMediaIterator = this.addCondition(AdsApp.adMedia().media(), config.media.condition)
     if (adGroupIterator.hasNext() &&
         logoMediaIterator.hasNext() &&
         imageMediaIterator.hasNext()) {
       var adGroup = adGroupIterator.next();
       var logo = logoMediaIterator.next();
       var image = imageMediaIterator.next();
-      adGroup.newAd().gmailSinglePromotionAdBuilder()
-          .withName('Ad name')
-          .withContent('Content')
-          .withHeadline('Headline')
-          .withAdvertiser('Advertiser')
-          .withSubject('Subject')
-          .withDescription('Description')
-          .withCallToAction('Call to action')
+      var ad = adGroup.newAd().gmailSinglePromotionAdBuilder()
+          .withName(config.withName)
+          .withContent(config.withContent)
+          .withHeadline(config.withHeadline)
+          .withAdvertiser(config.withAdvertiser)
+          .withSubject(config.withSubject)
+          .withDescription(config.withDescription)
+          .withCallToAction(config.withCallToAction)
           .withLogo(logo)
           .withImage(image)
-          .withFinalUrl('http://www.example.com')
-          .withDisplayUrl('http://www.example.com')
+          .withFinalUrl(config.withFinalUrl)
+          .withDisplayUrl(config.withDisplayUrl)
           .build();
       // GmailSinglePromotionAdBuilder has additional options.
       // For more details, see
       // https://developers.google.com/google-ads/scripts/docs/reference/adsapp/adsapp_gmailsinglepromotionadbuilder
+      arr.push({adGroup: adGroup, logo: logo, image: image, ad: ad})
     }
+    return arr
   }
   //Add a Gmail multi-product ad
-  addGmailMultiProductAd() {
+  addGmailMultiProductAd(config) {
+    console.log("addGmailMultiProductAd:needed: !config.condition''!, !config.media.condition''!, !config.logo.condition''!, !config.withName''!, !config.withHeadline''!, !config.withAdvertiser''!, !config.withSubject''!, !config.withDescription''!, !config.withItemImages''!, !config.withItemButtonCallsToAction''!, !config.withItemButtonFinalUrls''!, !config.withItemTitles''!, !config.withDisplayUrl''!, !config.withFinalUrl''!");
     // If you have multiple adGroups with the same name, this snippet will
     // pick an arbitrary matching ad group each time. In such cases, just
     // filter on the campaign name as well:
@@ -533,39 +517,35 @@ class GoogleAdsEntities extends Own{
     // AdsApp.adGroups()
     //     .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
     //     .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    var logoMediaIterator = AdsApp.adMedia().media()
-        .withCondition('Name = "INSERT_LOGO_IMAGE_NAME_HERE"')
-        .get();
-    var itemImageMediaIterator = AdsApp.adMedia().media()
-        .withCondition('Name = "INSERT_ITEM_1_IMAGE_NAME_HERE"')
-        .get();
-    if (adGroupIterator.hasNext() &&
+    var adGroupIterator = this.addCondition(AdsApp.adGroups(), config.condition), arr = []
+    var logoMediaIterator = this.addCondition(AdsApp.adMedia().media(), config.logo.condition)
+    var imageMediaIterator = this.addCondition(AdsApp.adMedia().media(), config.media.condition)
+    while (adGroupIterator.hasNext() &&
         logoMediaIterator.hasNext() &&
         itemImageMediaIterator.hasNext()) {
       var adGroup = adGroupIterator.next();
       var logo = logoMediaIterator.next();
       var item1Image = itemImageMediaIterator.next();
-      adGroup.newAd().gmailMultiProductAdBuilder()
-          .withName('Ad name')
-          .withAdvertiser('Advertiser')
-          .withSubject('Subject')
-          .withDescription('Description')
-          .withHeadline('Headline')
+      var ad = adGroup.newAd().gmailMultiProductAdBuilder()
+          .withName(config.withName)
+          .withHeadline(config.withHeadline)
+          .withAdvertiser(config.withAdvertiser)
+          .withSubject(config.withSubject)
+          .withDescription(config.withDescription)
           .withLogo(logo)
           .withItemImages([item1Image])
-          .withItemTitles(['Item 1 title'])
-          .withItemButtonCallsToAction(['Item 1 button text'])
-          .withItemButtonFinalUrls(['http://www.example.com/item_1_button'])
-          .withFinalUrl('http://www.example.com')
-          .withDisplayUrl('http://www.example.com')
+          .withItemTitles(config.withItemTitles)
+          .withItemButtonCallsToAction(config.withItemButtonCallsToAction
+          .withItemButtonFinalUrls(config.withItemButtonFinalUrls)
+          .withFinalUrl(config.withFinalUrl)
+          .withDisplayUrl(config.withDisplayUrl)
           .build();
       // GmailMultiProductAdBuilder has additional options.
       // For more details, see
       // https://developers.google.com/google-ads/scripts/docs/reference/adsapp/adsapp_gmailmultiproductadbuilder
+      arr.push({adGroup: adGroup, logo: logo, ad: ad, item: item1Image})
     }
+    return arr
   }
 //**********************
   //Add a responsive display ad
@@ -575,7 +555,8 @@ class GoogleAdsEntities extends Own{
   //   2. Create the ad.
   //
   // The following assumes you have not already created named assets.
-  addResponsiveDisplayAd() {
+  addResponsiveDisplayAd(config) {
+    console.log("addResponsiveDisplayAd:needed: !config.condition''!, !config.withBusinessName''!, !config.withDescriptions[]!, !config.withHeadlines[]!, !config.withFinalUrl''!, !config.buildImageAsset''!, !config.addMarketingImage.alt''!, !config.addMarketingImage.url''!, !config.addSquareMarketingImage.alt''!, !config.addSquareMarketingImage.url''!");
     // If you have multiple adGroups with the same name, this snippet will
     // pick an arbitrary matching ad group each time. In such cases, just
     // filter on the campaign name as well:
@@ -583,9 +564,7 @@ class GoogleAdsEntities extends Own{
     // AdsApp.adGroups()
     //     .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
     //     .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
+    var adGroupIterator = this.addCondition(AdsApp.adGroups(), config.condition), arr = []
 
     // If you have already created named image assets, select them like this:
     //
@@ -598,33 +577,32 @@ class GoogleAdsEntities extends Own{
     // while (marketingImageIterator.hasNext()) {
     //   marketingImages.push(marketingImageIterator.next());
     // }
-
-    if (adGroupIterator.hasNext()) {
+    while (adGroupIterator.hasNext()) {
       var adGroup = adGroupIterator.next();
       var adGroupBuilder = adGroup.newAd()
           .responsiveDisplayAdBuilder()
-          .withBusinessName('Your business name')
-          .withFinalUrl('http://www.example.com')
-          .withHeadlines(['First headline', 'Second headline'])
-          .withDescriptions(
-              ['First description', 'Second description', 'Third description']);
+          .withBusinessName(config.withBusinessName)
+          .withFinalUrl(config.withFinalUrl)
+          .withHeadlines(config.withHeadlines)
+          .withDescriptions(config.withDescriptions);
 
       // If you selected assets with a snippet as shown above, then provide those
       // assets here like this:
       //
       // adGroupBuilder = adGroupBuilder.withMarketingImages(marketingImages);
 
-      adGroupBuilder
+      var ad = adGroupBuilder
           .addMarketingImage(
-              buildImageAsset("rectangular image asset", "https://goo.gl/3b9Wfh"))
+              buildImageAsset(config.addMarketingImage.alt, config.addMarketingImage.url))
           .addSquareMarketingImage(
-              buildImageAsset("square image asset", "https://goo.gl/mtt54n"))
+              buildImageAsset(config.addSquareMarketingImage.alt, config.addSquareMarketingImage.url))
           .build();
-
+      arr.push(ad)
       // ResponsiveDisplayAdBuilder has additional options.
       // For more details, see
       // https://developers.google.com/google-ads/scripts/docs/reference/adsapp/adsapp_responsivedisplayadbuilder
     }
+    return arr
   }
 
   buildImageAsset(assetName, imageUrl) {
@@ -637,35 +615,43 @@ class GoogleAdsEntities extends Own{
   }
 //**********************
   //Pause ads in an ad group
-  pauseAdsInAdGroup() {
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (adGroupIterator.hasNext()) {
+  pauseAdsInAdGroup(config) {
+    console.log("pauseAdsInAdGroup:needed: !config.condition''!");
+    var adGroupIterator = this.addCondition(AdsApp.adGroups(), config.condition), arr = [], obj
+    while (adGroupIterator.hasNext()) {
+      obj = {}
       var adGroup = adGroupIterator.next();
       var adsIterator = adGroup.ads().get();
+      obj.entity = adGroup
+      obj.ads = []
       while (adsIterator.hasNext()) {
         var ad = adsIterator.next();
+        obj.ads.push(ad)
         ad.pause();
       }
+      arr.push(obj)
     }
+    return arr
   }
 //**********************
   //Get expanded text ads in an ad group
-  getExpandedTextAdsInAdGroup() {
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (adGroupIterator.hasNext()) {
+  getExpandedTextAdsInAdGroup(config) {
+    console.log("getExpandedTextAdsInAdGroup:needed: !config.condition''!");
+    var adGroupIterator = this.addCondition(AdsApp.adGroups(), config.condition), arr = [], obj
+    while (adGroupIterator.hasNext()) {
+      obj = {}
       var adGroup = adGroupIterator.next();
-      var adsIterator = adGroup.ads()
-        .withCondition('Type=EXPANDED_TEXT_AD')
-        .get();
+      var adsIterator = this.addCondition(adGroup.ads(), 'Type=EXPANDED_TEXT_AD')
+      obj.entity = adGroup
+      obj.ads = []
       while (adsIterator.hasNext()) {
         var ad = adsIterator.next().asType().expandedTextAd();
-        logExpandedTextAd(ad);
+        this.logExpandedTextAd(ad);
+        obj.ads.push(ad)
       }
+      arr.push(obj)
     }
+    return arr
   }
 
   logExpandedTextAd(expandedTextAd) {
@@ -688,22 +674,27 @@ class GoogleAdsEntities extends Own{
 //**********************
 //**********************
   //Get text ads in an ad group
-  getTextAdsInAdGroup() {
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
+  getTextAdsInAdGroup(config) {
+    console.log("getTextAdsInAdGroup:needed: !config.condition''!");
+    var adGroupIterator = this.addCondition(AdsApp.adGroups(), config.condition), arr = [], obj
     if (adGroupIterator.hasNext()) {
+      obj = {}
       var adGroup = adGroupIterator.next();
       // You can filter for ads of a particular type, using the AdType selector.
       // See https://developers.google.com/google-ads/scripts/docs/reference/adsapp/adsapp_adselector#withCondition_1
       // for possible values.
 
       var adsIterator = adGroup.ads().withCondition('Type=TEXT_AD').get();
+      obj.entity = adGroup
+      obj.ads = []
       while (adsIterator.hasNext()) {
         var ad = adsIterator.next();
-        logAd(ad);
+        this.logAd(ad);
+        obj.ads.push(ad)
       }
+      arr.push(obj)
     }
+    return arr
   }
 
   logAd(ad) {
@@ -718,11 +709,11 @@ class GoogleAdsEntities extends Own{
   }
 //**********************
   //Get stats for ads in an ad group
-  getAdStats() {
-    var adGroupIterator = AdsApp.adGroups()
-          .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-          .get();
-    if (adGroupIterator.hasNext()) {
+  getAdStats(config) {
+    console.log("getAdStats:needed: !config.condition''!, !config.dateRange''!");
+    var adGroupIterator = this.addCondition(AdsApp.adGroups(), config.condition), arr = [], obj
+    while (adGroupIterator.hasNext()) {
+      obj = {}
       var adGroup = adGroupIterator.next();
       // If you want to restrict your search to some ads only, then you could
       // apply a label and retrieve ads as
@@ -734,20 +725,25 @@ class GoogleAdsEntities extends Own{
       //   var adsIterator = label.ads().get();
 
       var adsIterator = adGroup.ads().get();
+      obj.entity = adGroup
+      obj.ads = []
       while (adsIterator.hasNext()) {
         var ad = adsIterator.next();
         // You can also request reports for pre-defined date ranges. See
         // https://developers.google.com/adwords/api/docs/guides/awql,
         // DateRangeLiteral section for possible values.
-        var stats = ad.getStatsFor('LAST_MONTH');
+        var stats = ad.getStatsFor(config.dateRange);
         Logger.log(adGroup.getName() + ', ' +
             stats.getClicks() + ', ' + stats.getImpressions());
+        obj.ads.push(ad)
       }
+      arr.push(obj)
     }
+    return arr
   }
 //**********************
   //Get legacy responsive display ads in an ad group
-  getResponsiveDisplayAdsInAdGroup() {
+  getResponsiveDisplayAdsInAdGroup(config) {
     // Responsive display ads can include multiple text and multiple media assets
     // in the ad, while legacy responsive display ads cannot. Use a condition
     // 'Type = "MULTI_ASSET_RESPONSIVE_DISPLAY_AD"' to select the former and
@@ -758,24 +754,33 @@ class GoogleAdsEntities extends Own{
     // When an ad iterator includes both responsive display ads and legacy
     // responsive display ads, use the ad.isLegacy() method to determine the style
     // of the ad.
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (adGroupIterator.hasNext()) {
+    console.log("getResponsiveDisplayAdsInAdGroup:needed: !config.condition''!, !config.dateRange''!");
+    var adGroupIterator = this.addCondition(AdsApp.adGroups(), config.condition), arr = [], obj
+    while (adGroupIterator.hasNext()) {
+      obj = {}
       var adGroup = adGroupIterator.next();
       var adsIterator = adGroup.ads()
           .withCondition('Type IN ["MULTI_ASSET_RESPONSIVE_DISPLAY_AD",
                                    "LEGACY_RESPONSIVE_DISPLAY_AD"]')
           .get();
+      obj.entity = adGroup
+      obj.ads = []
+      obj.isLegacy = []
+      obj.isNotLegacy = []
       while (adsIterator.hasNext()) {
         var ad = adsIterator.next().asType().responsiveDisplayAd();
+        obj.ads.push(ad)
         if (ad.isLegacy()) {
-          logLegacyResponsiveDisplayAd(ad);
+          this.logLegacyResponsiveDisplayAd(ad);
+          obj.isLegacy.push(ad)
         } else {
-          logResponsiveDisplayAd(ad);
+          this.logResponsiveDisplayAd(ad);
+          obj.isNotLegacy.push(ad)
         }
       }
+      arr.push(obj)
     }
+    return arr
   }
 
   logLegacyResponsiveDisplayAd(ad) {
@@ -791,14 +796,14 @@ class GoogleAdsEntities extends Own{
 
   logResponsiveDisplayAd(ad) {
     Logger.log('Long headline : ' + ad.getLongHeadline());
-    logTextAssets('Short headline ', ad.getHeadlines());
-    logTextAssets('Description ', ad.getDescriptions());
+    this.logTextAssets('Short headline ', ad.getHeadlines());
+    this.logTextAssets('Description ', ad.getDescriptions());
     Logger.log('Business name : ' + ad.getBusinessName());
-    logImageAssets('Marketing image ', ad.getMarketingImages());
-    logImageAssets('Square marketing image ', ad.getSquareMarketingImages());
-    logImageAssets('Logo image ', ad.getLogoImages());
-    logImageAssets('Landscape logo image ', ad.getLandscapeLogoImages());
-    logYouTubeAssets('YouTube video ', ad.getYouTubeVideos());
+    this.logImageAssets('Marketing image ', ad.getMarketingImages());
+    this.logImageAssets('Square marketing image ', ad.getSquareMarketingImages());
+    this.logImageAssets('Logo image ', ad.getLogoImages());
+    this.logImageAssets('Landscape logo image ', ad.getLandscapeLogoImages());
+    this.logYouTubeAssets('YouTube video ', ad.getYouTubeVideos());
     Logger.log('Approval status : ' + ad.getApprovalStatus());
     Logger.log('Enabled : ' + ad.isEnabled());
   }
@@ -827,81 +832,78 @@ class GoogleAdsEntities extends Own{
   /************************************************************************************************************************/
   //Get bidding strategies
   getBiddingStrategies() {
-    var biddingStrategies = AdsApp.biddingStrategies().get();
+    console.log("getBiddingStrategies: NO ARGUMENT NEEDED !");
+    var biddingStrategies = AdsApp.biddingStrategies().get(), arr = []
     while (biddingStrategies.hasNext()) {
       var biddingStrategy = biddingStrategies.next();
-
+      arr.push(biddingStrategy)
       Logger.log('Bidding strategy with id = %s, name = %s and type = ' +
           '%s was found.', biddingStrategy.getId().toFixed(0),
           biddingStrategy.getName(), biddingStrategy.getType());
     }
+    return arr
   }
   //Get bidding strategy by name
-  getBiddingStrategyByName() {
-    var biddingStrategies = AdsApp.biddingStrategies().withCondition(
-        'Name="INSERT_BIDDING_STRATEGY_NAME_HERE"').get();
+  getBiddingStrategyStatsByName(config) {
+    console.log("getBiddingStrategyStatsByName:needed: !config.condition''!");
+    var biddingStrategies = this.addCondition(AdsApp.biddingStrategies(), config.condition), arr = []
     while (biddingStrategies.hasNext()) {
       var biddingStrategy = biddingStrategies.next();
-
-      var stats = biddingStrategy.getStatsFor('LAST_MONTH');
-
-      Logger.log('Bidding strategy with id = %s, name = %s and type = ' +
-          '%s was found.', biddingStrategy.getId().toFixed(0),
-           biddingStrategy.getName(), biddingStrategy.getType());
-      Logger.log('Clicks: %s, Impressions: %s, Cost: %s.',
-          stats.getClicks(), stats.getImpressions(), stats.getCost());
+      arr.push(biddingStrategy)
     }
+    return arr
+  }
+  //Get bidding strategy stats by name
+  getBiddingStrategyStatsByName(config) {
+    console.log("getBiddingStrategyStatsByName:needed: !config.condition''!, !config.dateRange''!");
+    var biddingStrategies = this.addCondition(AdsApp.biddingStrategies(), config.condition)
+    return this.getResults(biddingStrategies, {stats: config.dateRange})
   }
   //Set campaign bidding strategy
-  setCampaignBiddingStrategy() {
-    var campaign = AdsApp.campaigns()
-        .withCondition('Name="INSERT_CAMPAIGN_NAME_HERE"')
-        .get()
-        .next();
+  setCampaignBiddingStrategy(config) {
+    console.log("setCampaignBiddingStrategy:needed: !config.condition''!, !config.setStrategy''!");
+    var campaignSel = this.addCondition(AdsApp.campaigns(), config.condition)
+    var campaign = campaignSel.next()
 
     // You may also set a flexible bidding strategy for the campaign
     // using the setStrategy() method. Use the
     // AdsApp.biddingStrategies() method to retrieve flexible bidding
     // strategies in your account.
-    campaign.bidding().setStrategy('MANUAL_CPM');
+    campaign.bidding().setStrategy(config.setStrategy || 'MANUAL_CPM');
+    return campaign
   }
   //Clear ad group bidding strategy
-  clearAdGroupBiddingStrategy() {
-    var adGroup = AdsApp.adGroups()
-        .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get()
-        .next();
+  clearAdGroupBiddingStrategy(config) {
+    console.log("clearAdGroupBiddingStrategy:needed: !config.condition''!");
+    var adGroupSel = this.addCondition(AdsApp.adGroups(), config.condition)
+    var adGroup = adGroupSel.next();
     adGroup.bidding().clearStrategy();
+    return adGroup
   }
   //Set an ad group's default CPC bid
-  setAdGroupDefaultCpcBid() {
-    var adGroup = AdsApp.adGroups()
-        .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get()
-        .next();
+  setAdGroupDefaultCpcBid(config) {
+    console.log("setAdGroupDefaultCpcBid:needed: !config.condition''!, !config.setCpc''!");
+    var adGroupSel = this.addCondition(AdsApp.adGroups(), config.condition)
+    var adGroup = adGroupSel.next();
 
     // This bid will only be used for auction if a corresponding cpc
     // bidding strategy is set to the ad group. E.g.
     //
     // adGroup.bidding().setStrategy('MANUAL_CPC');
-    adGroup.bidding().setCpc(3.0);
+    adGroup.bidding().setCpc(config.setCpc);
+    return adGroup
   }
   //Set a keyword's CPC bid
-  setKeywordCpcBid() {
-    var keyword = AdsApp.keywords()
-      .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-      .withCondition('AdGroupName = "INSERT_ADGROUP_NAME_HERE"')
-      .withCondition('KeywordText = "INSERT_KEYWORD_TEXT_HERE"')
-      .get()
-      .next();
+  setKeywordCpcBid(config) {
+    console.log("setKeywordCpcBid:needed: !config.condition''!, !config.setCpc''!");
+    var keywordSel = this.addCondition(AdsApp.keywords(), config.condition)
+    var keyword = keywordSel.next();
 
     // This bid will only be used for auction if a corresponding cpc
     // bidding strategy is set to the parent ad group. E.g.
     //
     // adGroup.bidding().setStrategy('MANUAL_CPC');
-    keyword.bidding().setCpc(3.0);
+    keyword.bidding().setCpc(config.setCpc);
   }
   /*---end-***************************************************************************************************************/
   /************************************************************************************************************************/
@@ -909,7 +911,8 @@ class GoogleAdsEntities extends Own{
   /************************************************************************************************************************/
   //Retrieve base spending limit of budget order
   getBaseSpendingLimit() {
-    var budgetOrderIterator = AdsApp.budgetOrders().get();
+    console.log("getBaseSpendingLimit: NO ARGMENT NEEDED !");
+    var budgetOrderIterator = AdsApp.budgetOrders().get(), arr = [];
     while (budgetOrderIterator.hasNext()) {
       var budgetOrder = budgetOrderIterator.next();
       var limitText = "";
@@ -918,55 +921,57 @@ class GoogleAdsEntities extends Own{
       } else if (budgetOrder.getTotalAdjustments() == null) {
         limitText = budgetOrder.getSpendingLimit();
       } else {
-        limitText = budgetOrder.getSpendingLimit() -
-            budgetOrder.getTotalAdjustments();
+        limitText = budgetOrder.getSpendingLimit() - budgetOrder.getTotalAdjustments();
       }
       Logger.log("Budget Order [" + budgetOrder.getName() +
           "] base spending limit: " + limitText);
+      arr.push({budgetOrder: budgetOrder, limitText: limitText})
     }
+    return arr
   }
   //Retrieve the active budget order
   getActiveBudgetOrder() {
+    console.log("getActiveBudgetOrder: NO ARGMENT NEEDED !");
     // There will only be one active budget order at any given time.
     var budgetOrderIterator = AdsApp.budgetOrders()
         .withCondition('status="ACTIVE"')
-        .get();
+        .get(), arr = [];
     while (budgetOrderIterator.hasNext()) {
       var budgetOrder = budgetOrderIterator.next();
       Logger.log("Budget Order [" + budgetOrder.getName() +
           "] is currently active.");
+      arr.push(budgetOrder)
     }
+    return arr
   }
   //Retrieve all budget orders
   getAllBudgetOrders() {
-    var budgetOrderIterator = AdsApp.budgetOrders().get();
-    while (budgetOrderIterator.hasNext()) {
-      var budgetOrder = budgetOrderIterator.next();
-      Logger.log("Budget Order [" + budgetOrder.getName() + "]");
-    }
+    console.log("getAllBudgetOrders: NO ARGMENT NEEDED !");
+    var budgetOrderIterator = this.addCondition(AdsApp.budgetOrders().get()), arr = [];
+    return this.getResults(budgetOrderIterator)
   }
   /*---end-***************************************************************************************************************/
   /************************************************************************************************************************/
   /*Budgets******************************************************************************************/
   /************************************************************************************************************************/
   //Set campaign budget
-  setCampaignBudget() {
-    var campaignIterator = AdsApp.campaigns()
-        .withCondition('Name = "INSERT_CAMPAIGN_NAME_HERE"')
-        .get();
-    if (campaignIterator.hasNext()) {
+  setCampaignBudget(config) {
+    console.log("setCampaignBudget:needed: !config.condition''!, !config.setAmount''!");
+    var campaignIterator = this.addCondition(AdsApp.campaigns(), config.condition), arr = []
+    while (campaignIterator.hasNext()) {
       var campaign = campaignIterator.next();
-      campaign.getBudget().setAmount(100);
+      campaign.getBudget().setAmount(config.setAmount);
       Logger.log('Campaign with name = ' + campaign.getName() +
           ' has budget = ' + campaign.getBudget().getAmount());
+      arr.push(campaign)
     }
+    return arr
   }
   //Get campaign budget
-  getBudgetDetails() {
-    var campaignIterator = AdsApp.campaigns()
-        .withCondition('Name = "INSERT_CAMPAIGN_NAME_HERE"')
-        .get();
-    if (campaignIterator.hasNext()) {
+  getBudgetDetails(config) {
+    console.log("getBudgetDetails:needed: !config.condition''!");
+    var campaignIterator = this.addCondition(AdsApp.campaigns(), config.condition), arr = [], obj
+    while (campaignIterator.hasNext()) {
       var campaign = campaignIterator.next();
       var budget = campaign.getBudget();
       var budgetCampaignIterator = budget.campaigns().get();
@@ -982,11 +987,16 @@ class GoogleAdsEntities extends Own{
       // Get all the campaigns associated with this budget. There could be
       // more than one campaign if this is a shared budget.
 
+      obj = {campaign: campaign, bidget: budget, budgetCampaignIterator: budgetCampaignIterator}
+      obj.associatedCampaign = []
       while (budgetCampaignIterator.hasNext()) {
         var associatedCampaign = budgetCampaignIterator.next();
         Logger.log(associatedCampaign.getName());
+        obj.associatedCampaign.push(associatedCampaign.getName())
       }
+      arr.push(obj)
     }
+    return arr
   }
   /*---end-***************************************************************************************************************/
   /************************************************************************************************************************/
@@ -994,31 +1004,16 @@ class GoogleAdsEntities extends Own{
   /************************************************************************************************************************/
   //Get all campaigns
   getAllCampaigns() {
+    console.log("getAllCampaigns: NO ARGMENT NEEDED !");
     // AdsApp.campaigns() will return all campaigns that are not removed by
     // default.
-    var campaignIterator = AdsApp.campaigns().get();
-    Logger.log('Total campaigns found : ' +
-        campaignIterator.totalNumEntities());
-    while (campaignIterator.hasNext()) {
-      var campaign = campaignIterator.next();
-      Logger.log(campaign.getName());
-    }
+    return this.addCondition(AdsApp.campaigns(), true)
   }
 //******************
   //Get a campaign by name
-  getCampaignsByName() {
-    var campaignIterator = AdsApp.campaigns()
-        .withCondition('Name = "INSERT_CAMPAIGN_NAME_HERE"')
-        .get();
-    if (campaignIterator.hasNext()) {
-      var campaign = campaignIterator.next();
-      Logger.log('Campaign Name: ' + campaign.getName());
-      Logger.log('Enabled: ' + campaign.isEnabled());
-      Logger.log('Bidding strategy: ' + campaign.getBiddingStrategyType());
-      Logger.log('Ad rotation: ' + campaign.getAdRotationType());
-      Logger.log('Start date: ' + formatDate(campaign.getStartDate()));
-      Logger.log('End date: ' + formatDate(campaign.getEndDate()));
-    }
+  getCampaignsByName(config) {
+    console.log("getCampaignsByName:needed: !config.condition''!");
+    return this.addCondition(AdsApp.campaigns(), 'Name = "'+config.condition+'"', true)
   }
   formatDate(date) {
     zeroPad(number) { return Utilities.formatString('%02d', number); }
@@ -1027,46 +1022,23 @@ class GoogleAdsEntities extends Own{
   }
 //******************
   //Get a campaign's stats
-  getCampaignStats() {
-    var campaignIterator = AdsApp.campaigns()
-        .withCondition('Name = "INSERT_CAMPAIGN_NAME_HERE"')
-        .get();
-    if (campaignIterator.hasNext()) {
-      var campaign = campaignIterator.next();
-      // You can also request reports for pre-defined date ranges. See
-      // https://developers.google.com/google-ads/scripts/docs/reference/adsapp/adsapp_campaign#getStatsFor_1,
-      // DateRangeLiteral section for possible values.
-      var stats = campaign.getStatsFor('LAST_MONTH');
-      Logger.log(campaign.getName() + ', ' + stats.getClicks() + 'clicks, ' +
-          stats.getImpressions() + ' impressions');
-    }
+  getCampaignStats(config) {
+    console.log("getCampaignStats:needed: !config.condition''!");
+    return this.addCondition(AdsApp.campaigns(), config.condition, {stats: config.datRange})
   }
   //Pause a campaign
-  pauseCampaign() {
-    var campaignIterator = AdsApp.campaigns()
-        .withCondition('Name = "INSERT_CAMPAIGN_NAME_HERE"')
-        .get();
+  pauseCampaign(config) {
+    console.log("pauseCampaign:needed: !config.condition''!");
+    var campaignIterator = this.addCondition(AdsApp.campaigns(), config.condition)
     if (campaignIterator.hasNext()) {
       var campaign = campaignIterator.next();
       campaign.pause();
     }
   }
   //Get a campaign's device bid modifiers
-  getCampaignBidModifiers() {
-    var campaignIterator = AdsApp.campaigns()
-        .withCondition('Name = "INSERT_CAMPAIGN_NAME_HERE"')
-        .get();
-    if (campaignIterator.hasNext()) {
-      var campaign = campaignIterator.next();
-      Logger.log('Campaign name: ' + campaign.getName());
-
-      var platformIterator = campaign.targeting().platforms().get();
-      while (platformIterator.hasNext()) {
-        var platform = platformIterator.next();
-        Logger.log(platform.getName() + ' bid modifier: ' +
-            platform.getBidModifier());
-      }
-    }
+  getCampaignBidModifiers(config) {
+    console.log("getCampaignBidModifiers:needed: !config.condition''!\noptionnally: config.platforms{}");
+    return this.addCondition(AdsApp.campaigns(), config.condition, {platforms: config.platforms || true})
   }
   //
   /*---end-***************************************************************************************************************/
@@ -1074,45 +1046,38 @@ class GoogleAdsEntities extends Own{
   /*Display******************************************************************************************/
   /************************************************************************************************************************/
   //Add a placement to an existing ad group
-  addPlacementToAdGroup() {
-    var adGroup = AdsApp.adGroups()
-        .withCondition("Name = 'INSERT_ADGROUP_NAME_HERE'")
-        .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-        .get()
-        .next();
+  addPlacementToAdGroup(config) {
+    console.log("addPlacementToAdGroup:needed: !config.condition''!, !config.withUrl''!\noptionnally: config.withCpc(int)");
+    var adGroupIte = this.addCondition(AdsApp.adGroups(), config.condition)
+    var adGroup = adGroupIte.next();
 
     // Other display criteria can be built in a similar manner using the
     // corresponding builder method in the AdsApp.Display,
     // AdsApp.CampaignDisplay or AdsApp.AdGroupDisplay class.
     var placementOperation = adGroup.display()
         .newPlacementBuilder()
-        .withUrl('http://www.site.com')  // required
-        .withCpc(0.50)                   // optional
+        .withUrl(config.withUrl)  // required
+        .withCpc(config.withCpc)  // optional
         .build();
     var placement = placementOperation.getResult();
     Logger.log('Placement with id = %s and url = %s was created.',
         placement.getId(), placement.getUrl());
+    return placement
   }
   //Retrieve all topics in an existing ad group
-  getAllTopics() {
-    var adGroup = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-        .get()
-        .next();
+  getAllTopics(config) {
+    console.log("getAllTopics:needed: !config.condition''!, !config.topics{condition,forDateRange,orderBy}''!");
+    var adGroupIte = this.addCondition(AdsApp.adGroups(), config), arr = []
+    var adGroup = adGroupIte.next();
 
     // Other display criteria can be retrieved in a similar manner using
     // the corresponding selector methods in the AdsApp.Display,
     // AdsApp.CampaignDisplay or AdsApp.AdGroupDisplay class.
-    var topicIterator = AdsApp.display()
-        .topics()
-        .withCondition('Impressions > 100')
-        .forDateRange('LAST_MONTH')
-        .orderBy('Clicks DESC')
-        .get();
+    var topicIterator = this.addCondition(AdsApp.display().topics(), config.topics)
 
     while (topicIterator.hasNext()) {
       var topic = topicIterator.next();
+      arr.push(topic)
 
       // The list of all topic IDs can be found on
       // https://developers.google.com/adwords/api/docs/appendix/verticals
@@ -1120,14 +1085,13 @@ class GoogleAdsEntities extends Own{
           'found.', topic.getId().toFixed(0),
            topic.getTopicId().toFixed(0));
     }
+    return arr
   }
   //Get stats for all audiences in an existing ad group
-  getAudienceStats() {
-    var adGroup = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-        .get()
-        .next();
+  getAudienceStats(config) {
+    console.log("getAudienceStats:needed: !config.condition''!, !config.audiences{condition,forDateRange,orderBy}''!");
+    var adGroupIte = this.addCondition(AdsApp.adGroups(), config), arr = [], obj = {}
+    var adGroup = adGroupIte.next();
 
     // Other display criteria can be retrieved in a similar manner using
     // the corresponding selector methods in the AdsApp.Display,
@@ -1137,10 +1101,12 @@ class GoogleAdsEntities extends Own{
         .get();
 
     Logger.log('ID, Audience ID, Clicks, Impressions, Cost');
-
+    obj.entity = adGroup
+    obj.audiences = []
     while (audienceIterator.hasNext()) {
       var audience = audienceIterator.next();
-      var stats = audience.getStatsFor('LAST_MONTH');
+      var stats = audience.getStatsFor(config.audiences.dateRange);
+      obj.audiences.push({entity: audience, stats: stats})
 
       // User List IDs (List IDs) are available on the details page of
       // a User List (found under the Audiences section of the Shared
@@ -1148,110 +1114,96 @@ class GoogleAdsEntities extends Own{
       Logger.log('%s, %s, %s, %s, %s', audience.getId().toFixed(0),
          audience.getAudienceId(), stats.getClicks(),
          stats.getImpressions(), stats.getCost());
+       arr.push(obj)
     }
+    return arr
   }
   /*---end-***************************************************************************************************************/
   /************************************************************************************************************************/
   /*Drafts and Experiments******************************************************************************************/
   /************************************************************************************************************************/
   //Create a draft campaign
-  createDraft() {
-    var campaign = AdsApp.campaigns()
-        .withCondition("Name = 'INSERT_CAMPAIGN_NAME_HERE'")
-        .get()
-        .next();
+  createDraft(config) {
+    console.log("createDraft:needed: !config.condition''!, !config.withName''!");
+    var campaignIte = this.addCondition(AdsApp.campaigns(), config), arr = [], obj = {}
+    var campaign = adGroupIte.next();
 
     var draftBuilder = campaign.newDraftBuilder()
-        .withName("INSERT_NEW_DRAFT_NAME_HERE")
+        .withName(config.withName)
         .build();
 
     var draft = draftBuilder.getResult();
+    return draft
   }
   //Get draft campaigns
   getDrafts() {
+    console.log("getDrafts: NO ARGMENT NEEDED !");
     // Get all drafts.
-    var drafts = AdsApp.drafts().get();
-
-    Logger.log(drafts.totalNumEntities());
-
-    while (drafts.hasNext()) {
-      var draft = drafts.next();
-      Logger.log("Draft: " + draft.getName());
-    }
-
-    // Get a specific draft.
-    var campaignIterator = AdsApp.drafts()
-        .withCondition("DraftName = 'INSERT_DRAFT_NAME'")
-        .get();
-
-    while (campaignIterator.hasNext()) {
-      Logger.log(campaignIterator.next().getName());
-    }
+    return this.addCondition(AdsApp.drafts(), true)
+  }
+  // Get a specific draft.
+  getDraftsByName(config) {
+    console.log("getDraftsByName:needed: !config.condition''!");
+    return this.addCondition(AdsApp.drafts(), "DraftName = '"+config+"'", true)
   }
   //Create an experiment
   createExperiment() {
-    var draft = AdsApp.drafts()
-        .withCondition("DraftName = INSERT_DRAFT_NAME")
-        .get()
-        .next();
+    console.log("createExperiment:needed: !config.condition''!, !config.withName''!, !config.withTrafficSplitPercent''!");
+    var draftIte = this.addCondition(AdsApp.drafts(), "DraftName = '"+config+"'")
+    var draft = draftIte.next();
 
     var experimentBuilder = draft.newExperimentBuilder();
 
-    experimentBuilder.withName("INSERT_NEW_EXPERIMENT_NAME_HERE")
-        .withTrafficSplitPercent(50)
+    experimentBuilder.withName(config.withName)
+        .withTrafficSplitPercent(config.withTrafficSplitPercent)
         .startBuilding();
+    return experimentBuilder
   }
   //Get experiments
   getExperiments() {
+    console.log("getExperiments: NO ARGMENT NEEDED !");
     // Get all experiments.
-    var exps = AdsApp.experiments().get();
-
-    Logger.log(exps.totalNumEntities());
-
-    while (exps.hasNext()) {
-      var exp = exps.next();
-      Logger.log("Experiment: " + exp.getName());
-    }
-
-    // Get specific experiment.
-    var campaignIterator = AdsApp.experiments()
-        .withCondition("Name = 'INSERT_EXPERIMENT_NAME'")
-        .get();
-
-    while (campaignIterator.hasNext()) {
-      Logger.log(campaignIterator.next().getName());
-    }
+    return this.addCondition(AdsApp.experiments(), true);
+  }
+  // Get specific experiment.
+  getExperimentsByName() {
+    console.log("getExperimentsByName:needed: !config.condition''!");
+    return this.addCondition(AdsApp.experiments(), "Name = '"+config+"'", true)
   }
   /*---end-***************************************************************************************************************/
   /************************************************************************************************************************/
   /*Excluded Placement Lists******************************************************************************************/
   /************************************************************************************************************************/
   //Show all the shared excluded placements in an excluded placement list
-  showAllExcludedPlacementsFromList() {
-    var EXCLUDED_PLACEMENT_LIST_NAME = 'INSERT_LIST_NAME_HERE';
+  showAllExcludedPlacementsFromList(config) {
+    console.log("showAllExcludedPlacementsFromList:needed: !config.condition''!");
+    var EXCLUDED_PLACEMENT_LIST_NAME = config.condition, arr = [], obj;
 
-    var excludedPlacementListIterator =
-        AdsApp.excludedPlacementLists()
-            .withCondition('Name = "' + EXCLUDED_PLACEMENT_LIST_NAME + '"')
-            .get();
+    var excludedPlacementListIterator = this.addCondition(AdsApp.excludedPlacementLists(), 'Name = "' + EXCLUDED_PLACEMENT_LIST_NAME + '"')
 
-    if (excludedPlacementListIterator.totalNumEntities() == 1) {
+    while (excludedPlacementListIterator.hasNext()){
       var excludedPlacementList = excludedPlacementListIterator.next();
-      var sharedExcludedPlacementIterator =
-          excludedPlacementList.excludedPlacements().get();
+      var sharedExcludedPlacementIterator = excludedPlacementList.excludedPlacements().get();
 
+      obj = {}
+      obj.excludedPlacementList = excludedPlacementList
+      obj.sharedExcludedPlacement = []
       while (sharedExcludedPlacementIterator.hasNext()) {
         var sharedExcludedPlacement = sharedExcludedPlacementIterator.next();
         Logger.log(sharedExcludedPlacement.getUrl());
+        obj.sharedExcludedPlacement.push(sharedExcludedPlacement)
       }
+      arr.push(obj)
     }
+    return arr
   }
   /*---end-***************************************************************************************************************/
   /************************************************************************************************************************/
   /*Keywords******************************************************************************************/
   /************************************************************************************************************************/
   //Add a keyword to an existing ad group
-  addKeyword() {
+  addKeyword(config) {
+    console.log("addKeyword:needed: !config.condition''!, !config.withName''!, !config.withCpc''!, !config.withFinalUrl''!");
     // If you have multiple adGroups with the same name, this snippet will
     // pick an arbitrary matching ad group each time. In such cases, just
     // filter on the campaign name as well:
@@ -1259,51 +1211,25 @@ class GoogleAdsEntities extends Own{
     // AdsApp.adGroups()
     //     .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
     //     .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (adGroupIterator.hasNext()) {
-      var adGroup = adGroupIterator.next();
-
-      adGroup.newKeywordBuilder()
-          .withText('Hello world')
-          .withCpc(1.25)                          // Optional
-          .withFinalUrl('http://www.example.com') // Optional
-          .build();
-
-      // KeywordBuilder has a number of other options. For more details see
-      // https://developers.google.com/google-ads/scripts/docs/reference/adsapp/adsapp_keywordbuilder
-    }
+    return this.addCondition(AdsApp.adGroups(), config, {action: {type: "add", entityType: "keyword", config: config}})
   }
   //Pause an existing keyword in an ad group
   pauseKeywordInAdGroup() {
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (adGroupIterator.hasNext()) {
+    console.log("pauseKeywordInAdGroup:needed: !config.condition''!, !config.keyword.condition''!");
+    //return this.addCondition(AdsApp.adGroups(), config, {action: {type: "pause", value: "keyword", config: config}})
+    var adGroupIterator = this.addCondition(AdsApp.adGroups(), config)
+    while (adGroupIterator.hasNext()) {
       var adGroup = adGroupIterator.next();
-      var keywordIterator = adGroup.keywords()
-          .withCondition('Text="INSERT_KEYWORDS_HERE"').get();
-      while (keywordIterator.hasNext()) {
-        var keyword = keywordIterator.next();
-        keyword.pause();
-      }
+      var keywordIterator = this.addCondition(adGroup.keywords(), config.keyword.condition, {action: {type: "pause", entityType: "keyword"}})
     }
   }
 //******************
   //Get all keywords in an ad group
-  getKeywordsInAdGroup() {
-    var keywordIterator = AdsApp.keywords()
-        .withCondition('AdGroupName = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (keywordIterator.hasNext()) {
-      while (keywordIterator.hasNext()) {
-        var keyword = keywordIterator.next();
-        Logger.log(formatKeyword(keyword));
-      }
-    }
+  getKeywordsInAdGroup(config) {
+    console.log("getKeywordsInAdGroup:needed: !config.condition''(AdGroupName)!");
+    return this.addCondition(AdsApp.keywords(), 'AdGroupName = "'+config+'"', true)
   }
-
+/*
   formatKeyword(keyword) {
     return 'Text : ' + keyword.getText() + '\n' +
         'Match type : ' + keyword.getMatchType() + '\n' +
@@ -1312,25 +1238,18 @@ class GoogleAdsEntities extends Own{
         'Approval Status : ' + keyword.getApprovalStatus() + '\n' +
         'Enabled : ' + keyword.isEnabled() + '\n';
   }
+*/
 //******************
   //Get stats for all keywords in an ad group
-  getKeywordStats() {
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (adGroupIterator.hasNext()) {
+  getKeywordStats(config) {
+    console.log("getKeywordStats:needed: !config.condition''!, !config.dateRange''!");
+    var adGroupIterator = this.addCondition(AdsApp.adGroups(), config), arr = [], obj
+    while (adGroupIterator.hasNext()) {
       var adGroup = adGroupIterator.next();
       var keywordIterator = adGroup.keywords().get();
-      while (keywordIterator.hasNext()) {
-        var keyword = keywordIterator.next();
-        // You can also request reports for pre-defined date ranges. See
-        // https://developers.google.com/adwords/api/docs/guides/awql,
-        // DateRangeLiteral section for possible values.
-        var stats = keyword.getStatsFor('LAST_MONTH');
-        Logger.log(adGroup.getName() + ', ' + keyword.getText() + ', ' +
-            stats.getClicks() + ', ' + stats.getImpressions());
-      }
+      arr.push(this.getResults(keywordIterator, {stats: config.dateRange}))
     }
+    return arr
   }
   /*---end-***************************************************************************************************************/
   /************************************************************************************************************************/
@@ -1338,63 +1257,30 @@ class GoogleAdsEntities extends Own{
   /************************************************************************************************************************/
   //Get all labels from a user's account
   getAllLabels() {
-    var labelIterator = AdsApp.labels().get();
-
-    while (labelIterator.hasNext()) {
-      var label = labelIterator.next();
-      Logger.log(label.getName());
-    }
+    console.log("getAllLabels: NO ARGMENT NEEDED !");
+    return this.addCondition(AdsApp.labels(), true)
   }
   //Get a label by name
-  getLabelsByName() {
-    var labelIterator = AdsApp.labels()
-        .withCondition('Name = "INSERT_LABEL_NAME_HERE"')
-        .get();
-    if (labelIterator.hasNext()) {
-      var label = labelIterator.next();
-      Logger.log('Name: ' + label.getName());
-      Logger.log('Description: ' + label.getDescription());
-      Logger.log('Color: ' + label.getColor());
-      Logger.log('Number of campaigns: ' +
-          label.campaigns().get().totalNumEntities());
-      Logger.log('Number of ad groups: ' +
-          label.adGroups().get().totalNumEntities());
-      Logger.log('Number of ads: ' + label.ads().get().totalNumEntities());
-      Logger.log('Number of keywords: ' +
-          label.keywords().get().totalNumEntities());
-    }
+  getLabelsByName(config) {
+    console.log("getLabelsByName:needed: !config.condition''(LabelName)!, !config.labelName!");
+    return this.addCondition(AdsApp.labels(), 'Name = "'+config+'"', true)
   }
   //Apply a label to a campaign
-  applyLabel() {
+  applyLabel(config) {
+    console.log("applyLabel:needed: !config.condition''(LabelName)!, !config.labelName!");
     // Retrieve a campaign, and apply a label to it. Applying labels to other
     // object types are similar.
-    var campaignIterator = AdsApp.campaigns()
-        .withCondition('Name = "INSERT_CAMPAIGN_NAME_HERE"')
-        .get();
-    if (campaignIterator.hasNext()) {
-      var campaign = campaignIterator.next();
-      campaign.applyLabel('Test');
-    }
+    return this.addCondition(AdsApp.campaigns(), config, {action: {type: "applyLabel", config: config}})
   }
   //Remove a label from a campaign
   removeLabel() {
-    var campaignIterator = AdsApp.campaigns()
-       .withCondition('Name = "INSERT_CAMPAIGN_NAME_HERE"')
-       .get();
-    if (campaignIterator.hasNext()) {
-      var campaign = campaignIterator.next();
-      campaign.removeLabel('Test');
-    }
+    console.log("removeLabel:needed: !config.condition''(LabelName)!, !config.labelName!");
+    return this.addCondition(AdsApp.campaigns(), config, {action: {type: "removeLabel", config: config}})
   }
   //Remove a label from the user's account
   removeLabel() {
-    var labelIterator = AdsApp.labels()
-        .withCondition('Name = "INSERT_LABEL_NAME_HERE"')
-        .get();
-    if (labelIterator.hasNext()) {
-      label = labelIterator.next();
-      label.remove();
-    }
+    console.log("removeLabel:needed: !config.condition''(LabelName)!, !config.labelName!");
+    return this.addCondition(AdsApp.labels(), config, {action: {type: "remove", config: config}})
   }
   /*---end-***************************************************************************************************************/
   /************************************************************************************************************************/

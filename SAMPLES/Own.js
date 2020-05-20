@@ -27,28 +27,28 @@ class Own(){
             config.targetting ? AdsApp.targetting() :
             /*retourn par défaut*/AdsApp.campaigns();
   }
-  addCondition(theIterator, objectCondition){
+  addCondition(theIterator, objectCondition, options){
     var dateRange = objectCondition.dateRange || []
     var orderBy = objectCondition.orderBy || []
     var widthIds = objectCondition.widthIds || []
-    var condition = objectCondition.condition || []
+    var condition = Array.isArray(objectCondition.condition) ? objectCondition.condition : typeof objectCondition.condition == "string" ? [objectCondition.condition] : []
 
     if(condition)
-      if(Array.isArray(condition))
-        for(a in condition)
-          theIterator.withCondition(condition)
-      else theIterator.withCondition(condition)
-    this.throwerr("addCondition=>argument 'objectCondition' manquant")
+      for(a in condition)
+        theIterator.withCondition(condition[a])
+    else this.throwerr("addCondition=>argument 'objectCondition' manquant")
     if(dateRange)theIterator.forDateRange(dateRange)
     if(orderBy)theIterator.orderBy(orderBy)
     if(widthIds)theIterator.widthIds(widthIds)
-    return theIterator.get();
+    if(objectCondition === true)return this.getResults(theIterator.get())
+    else if(options)return this.getResults(theIterator.get(), options)
+    else return theIterator.get();
   }
-  getResults(theIterator, config){
+  getResults(theIterator, config, entityType){
     var results = [], entityResponse
     while (theIterator.hasNext()) {
       var entity = theIterator.next();
-      switch(entity.getEntityType()){
+      switch(entity.getEntityType() || entityType){
         case"Account":entityResponse = this.getAccountResults(entity);break;
         case"Campaign":entityResponse = this.getCampaignResults(entity);break;
         case"CampaignMobileApp":entityResponse = this.getMobileAppResult(entity);break;
@@ -64,11 +64,15 @@ class Own(){
         case"SiteLinks":entityResponse = this.getSiteLinksResults(entity);break;
         case"Snippets":entityResponse = this.getSnippetsResults(entity);break;
         /*----------*/
+        case"BudgetOrders":entityResponse = this.getBudgetOrdersResults(entity);break;
+        case"BiddingStrategy":entityResponse = this.getBiddingStrategyResults(entity);break;
+        case"Draft":entityResponse = this.getDraftResults(entity);break;
+        case"Experiment":entityResponse = this.getExperimentResults(entity);break;
       }
 
       if(config){
         if(config.mobileApps){
-          var ite = this.addCondition(entity.extensions().mobileApps().get(), config.mobileApps.condition)
+          var ite = this.addCondition(entity.extensions().mobileApps().get(), config.mobileApps.condition || "")
           entityResponse["mobileApp"] = []
           while(ite.hasNext()){
             var r = this.getMobileAppResult(ite.next())
@@ -78,7 +82,7 @@ class Own(){
           }
         }
         if(config.phoneNumbers){
-          var ite = this.addCondition(entity.phoneNumbers().get(), config.mobileApps.condition)
+          var ite = this.addCondition(entity.phoneNumbers().get(), config.mobileApps.condition || "")
           entityResponse["phoneNumber"] = []
           while(ite.hasNext()){
             var r = this.getPhoneNumberResult(ite.next())
@@ -88,7 +92,7 @@ class Own(){
           }
         }
         if(config.prices){
-          var ite = this.addCondition(entity.extensions().prices().get(), config.prices.condition)
+          var ite = this.addCondition(entity.extensions().prices().get(), config.prices.condition || "")
           entityResponse["prices"] = []
           while(ite.hasNext()){
             var r = this.getPhoneNumberResult(ite.next())
@@ -98,7 +102,7 @@ class Own(){
           }
         }
         if(config.sitelinks){
-          var ite = this.addCondition(entity.extensions().sitelinks().get(), config.sitelinks.condition)
+          var ite = this.addCondition(entity.extensions().sitelinks().get(), config.sitelinks.condition || "")
           entityResponse["sitelinks"] = []
           while(ite.hasNext()){
             var r = this.getSiteLinksResult(ite.next())
@@ -108,7 +112,7 @@ class Own(){
           }
         }
         if(config.snippets){
-          var ite = this.addCondition(entity.extensions().snippets().get(), config.snippets.condition)
+          var ite = this.addCondition(entity.extensions().snippets().get(), config.snippets.condition || "")
           entityResponse["snippets"] = []
           while(ite.hasNext()){
             var r = this.getSnippetsResult(ite.next())
@@ -121,7 +125,7 @@ class Own(){
           if(config.proximities.addProximity)
             theIterator.addProximity({latitude: config.proximities.data.lat, longitude: config.proximities.data.lon, radius: config.proximities.data.radius, radiusUnits: config.proximities.data.radiusUnits, bidModifier: config.proximities.data.bidModifier});
           else{
-            var ite = this.addCondition(entity.targetting().targetedProximities().get(), config.proximities.condition)
+            var ite = this.addCondition(entity.targetting().targetedProximities().get(), config.proximities.condition || "")
             entityResponse["proximities"] = []
             while(ite.hasNext()){
               var r = this.getProximitiesResult(ite.next())
@@ -132,9 +136,10 @@ class Own(){
           }
         }
         if(config.platforms){
-          if(config.platforms.targets == "desktop")var ite = this.addCondition(entity.platforms().desktop().get(), config.platforms.condition)
-          if(config.platforms.targets == "tablet")var ite = this.addCondition(entity.platforms().tablet().get(), config.platforms.condition)
-          if(config.platforms.targets == "mobile")var ite = this.addCondition(entity.platforms().mobile().get(), config.platforms.condition)
+          if(config.platforms.targets == "desktop")var ite = this.addCondition(entity.platforms().desktop().get(), config.platforms.condition || "")
+          else if(config.platforms.targets == "tablet")var ite = this.addCondition(entity.platforms().tablet().get(), config.platforms.condition || "")
+          else if(config.platforms.targets == "mobile")var ite = this.addCondition(entity.platforms().mobile().get(), config.platforms.condition || "")
+          else var ite = this.addCondition(entity.platforms().get(), config.platforms.condition || "")
           entityResponse[config.platforms.targets] = []
           while(ite.hasNext()){
             var r = this.getPlatformsResult(ite.next())
@@ -148,7 +153,7 @@ class Own(){
         if(config.locations){
           if(config.addLocation)
             entity.addLocation(config.addLocation)
-          var ite = this.addCondition(entity.targetting().targetedLocations().get(), config.locations.condition)
+          var ite = this.addCondition(entity.targetting().targetedLocations().get(), config.locations.condition || "")
           entityResponse[config.locations] = []
           while(ite.hasNext()){
             var r = this.getLocationsResult(ite.next())
@@ -160,7 +165,7 @@ class Own(){
         if(config.excludedLocations){
           if(config.excludedLocations.add)
             entity.excludedLocations(config.excludeLocation.add.geoCode)
-          var ite = this.addCondition(entity.targetting().excludedLocations().get(), config.locations.condition)
+          var ite = this.addCondition(entity.targetting().excludedLocations().get(), config.locations.condition || "")
           entityResponse[config.excludedLocations] = []
           while(ite.hasNext()){
             var r = this.getExcludedLocationsResult(ite.next())
@@ -172,7 +177,7 @@ class Own(){
         if(config.adSchedules){
           if(config.adSchedules.add)
             entity.adSchedules(config.excludeLocation.add.geoCode)
-          var ite = this.addCondition(entity.targetting().adSchedules().get(), config.locations.condition)
+          var ite = this.addCondition(entity.targetting().adSchedules().get(), config.locations.condition || "")
           entityResponse[config.adSchedules] = []
           while(ite.hasNext()){
             var r = this.getAdSchedulesResult(ite.next())
@@ -185,8 +190,21 @@ class Own(){
         if(config.stats)
           entityResponse["stats"] = this.getStatsResult(entity.getStatsFor(config.dateRange))
         /*****************/
+        if(config.keywords)
+          entityResponse["keywords"] = this.getKeywordResult(entity.keywords())
+        /*****************/
         if(config.addLocation)
           entity.addLocation(config.addLocation.geoCode, config.addLocation.bidModifier)
+          /*****************/
+        if(config.action)
+          switch(config.action.type){
+            case"add": addAction(entity, config.action)
+            break;
+            case"pause": pauseAction(entity, config.action)
+            break;
+            default:generalAction(entity, config.action);break;
+          }
+
       }
       // var accountName = account.getName() ? account.getName() : '--';
       // Logger.log('%s,%s,%s,%s', account.getCustomerId(),  accountName,
@@ -194,6 +212,53 @@ class Own(){
       results.push(entityResponse)
     }
     return results
+  }
+  addAction(entity, config){
+    var entityType = config.entityType
+    var config = config.config
+    switch(entityType){
+      case"keyword":
+            entity.newKeywordBuilder()
+                .withText(config.withText)
+                .withCpc(config.withCpc)/*Optional*/
+                .withFinalUrl(config.withFinalUrl) /*Optional*/
+                .build();
+      break;
+      case"location":
+            entity.addLocation(config.addLocation.geoCode, config.addLocation.bidModifier)
+      break;
+      default:break;
+    }
+  }
+  pauseAction(entity, config){
+    var entityType = config.entityType
+    var config = config.config
+    switch(entityType){
+      /*case"keyword":
+        entity.pause();
+      break;*/
+      break;
+      default:entity.pause();break;
+    }
+  }
+  generalAction(entity, config){
+    var type = config.type
+    var config = config.config
+    switch(type){
+      /*case"keyword":
+        entity.pause();
+      break;*/
+      case"remove":
+            entity.remove()
+      break;
+      case"removeLabel":
+            entity.removeLabel(config.labelName)
+      break;
+      case"applyLabel":
+            entity.applyLabel(config.labelName)
+      break;
+      default:break;
+    }
   }
   getAccountResult(account){
     return {entity: account, getCurrencyCode: account.getCurrencyCode(), getCustomerId: account.getCustomerId(), getName: account.getName(), getTimeZone: account.getTimeZone()}
@@ -212,6 +277,18 @@ class Own(){
   }
   getLabelResult(label){
     return {entity: label, getId: label.getId(), getName: label.getName(), getColor: label.getColor(), getDescription: label.getDescription()}
+  }
+  getBiddingStrategyResult(label){
+    return {entity: label, getId: label.getId(), getName: label.getName(), getType: label.getType()}
+  }
+  getDraftResult(label){
+    return {entity: label, getId: label.getId(), getName: label.getName(), getStatus: label.getStatus(), hasRunningExperiment: label.hasRunningExperiment()}
+  }
+  getExperimentResult(label){
+    return {entity: label, getId: label.getId(), getName: label.getName(), getStatus: label.getStatus(), getTrafficSplitPercent: label.getTrafficSplitPercent()}
+  }
+  getBudgetOrdersResult(label){
+    return {entity: label, getId: label.getId(), getName: label.getName(), budgetOrders: label.budgetOrders(), getSpendingLimit: label.getSpendingLimit(), getTotalAdjustments: label.getTotalAdjustments()}
   }
   getStatsResult(stats){
     return {entity: stats, getAverageCpc: stats.getAverageCpc(), getAverageCpm: stats.getAverageCpm(), getAverageCpv: stats.getAverageCpv(), getAveragePageviews: stats.getAveragePageviews(), getCtr: stats.getCtr(), getImpressions: stats.getImpressions(), getViewRate: stats.getViewRate(), getViews: stats.getViews(), getCost: stats.getCost(), getConversions: stats.getConversions(), getConversionRate: stats.getConversionRate(), getClicks: stats.getClicks(), getBounceRate: stats.getBounceRate(), getAverageTimeOnSite: stats.getAverageTimeOnSite()}
