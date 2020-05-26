@@ -1287,9 +1287,10 @@ class GoogleAdsEntities extends Own{
   /*Negative Keyword Lists******************************************************************************************/
   /************************************************************************************************************************/
   //Construct a new negative keyword list and add it to a campaign
-  addNegativeKeywordListToCampaign() {
-    var NEGATIVE_KEYWORD_LIST_NAME = 'INSERT_LIST_NAME_HERE';
-    var CAMPAIGN_NAME = 'INSERT_CAMPAIGN_NAME_HERE';
+  addNegativeKeywordListToCampaign(config) {
+    console.log("addNegativeKeywordListToCampaign:needed: !config.keywordListName''(LabelName)!, !config.campaignName!, !config.addNegativeKeywords[]!");
+    var NEGATIVE_KEYWORD_LIST_NAME = config.keywordListName;
+    var CAMPAIGN_NAME = config.campaignName;
 
     var negativeKeywordListOperator =
         AdsApp.newNegativeKeywordListBuilder()
@@ -1298,28 +1299,20 @@ class GoogleAdsEntities extends Own{
 
     if (negativeKeywordListOperator.isSuccessful()) {
       var negativeKeywordList = negativeKeywordListOperator.getResult();
-      negativeKeywordList.addNegativeKeywords([
-          'broad match keyword',
-          '"phrase match keyword"',
-          '[exact match keyword]'
-      ]);
+      negativeKeywordList.addNegativeKeywords(config.addNegativeKeywords);
 
-      var campaign = AdsApp.campaigns()
-          .withCondition('Name = "' + CAMPAIGN_NAME + '"')
-          .get();
+      var campaign = this.addCondition(AdsApp.campaigns(), config || 'Name = "' + CAMPAIGN_NAME + '"')
       campaign.addNegativeKeywordList(negativeKeywordList);
     } else {
       Logger.log('Could not add Negative Keyword List.');
     }
   }
   //Remove all the shared negative keywords in an negative keyword list
-  removeAllNegativeKeywordsFromList() {
-    var NEGATIVE_KEYWORD_LIST_NAME = 'INSERT_LIST_NAME_HERE';
+  removeAllNegativeKeywordsFromList(config) {
+    console.log("removeAllNegativeKeywordsFromList:needed: !config.keywordListName''(LabelName)!");
+    var NEGATIVE_KEYWORD_LIST_NAME = config.keywordListName;
 
-    var negativeKeywordListIterator =
-        AdsApp.negativeKeywordLists()
-            .withCondition('Name = "' + NEGATIVE_KEYWORD_LIST_NAME + '"')
-            .get();
+    var negativeKeywordListIterator = this.addCondition(AdsApp.negativeKeywordLists(), 'Name = "' + NEGATIVE_KEYWORD_LIST_NAME + '"')
 
     if (negativeKeywordListIterator.totalNumEntities() == 1) {
       var negativeKeywordList = negativeKeywordListIterator.next();
@@ -1342,32 +1335,22 @@ class GoogleAdsEntities extends Own{
   /*Negative Keywords******************************************************************************************/
   /************************************************************************************************************************/
   //Add negative keyword to a campaign
-  addNegativeKeywordToCampaign() {
-    var campaignIterator = AdsApp.campaigns()
-          .withCondition('Name = "INSERT_CAMPAIGN_NAME_HERE"')
-          .get();
-    if (campaignIterator.hasNext()) {
+  addNegativeKeywordToCampaign(config) {
+    console.log("addNegativeKeywordToCampaign:needed: !config.campaignName''!, !config.negativeKeyword''");
+    var campaignIterator = this.addCondition(AdsApp.campaigns(), config || 'Name = "'+config.campaignName+'"')
+    while (campaignIterator.hasNext()) {
       var campaign = campaignIterator.next();
-      campaign.createNegativeKeyword('[Budget hotels]');
+      campaign.createNegativeKeyword(config.negativeKeyword);
     }
   }
   //Get negative keywords in a campaign
-  getNegativeKeywordForCampaign() {
-    var campaignIterator = AdsApp.campaigns()
-        .withCondition('Name = "INSERT_CAMPAIGN_NAME_HERE"')
-        .get();
-    if (campaignIterator.hasNext()) {
-      var campaign = campaignIterator.next();
-      var negativeKeywordIterator = campaign.negativeKeywords().get();
-      while (negativeKeywordIterator.hasNext()) {
-        var negativeKeyword = negativeKeywordIterator.next();
-        Logger.log('Text: ' + negativeKeyword.getText() + ', MatchType: ' +
-            negativeKeyword.getMatchType());
-      }
-    }
+  getNegativeKeywordForCampaign(config) {
+    console.log("getNegativeKeywordForCampaign:needed: !config.campaignName''!, !config.negativeKeywords''");
+    return this.addCondition(AdsApp.campaigns(), config || 'Name = "'+config.campaignName+'"', {negativeKeywords: true})
   }
   //Add a negative keyword to an ad group
   addNegativeKeywordToAdGroup() {
+    console.log("addNegativeKeywordToAdGroup:needed: !config.condition''!, !config.negativeKeyword''");
     // If you have multiple ad groups with the same name, this snippet will
     // pick an arbitrary matching ad group each time. In such cases, just
     // filter on the campaign name as well:
@@ -1375,16 +1358,15 @@ class GoogleAdsEntities extends Own{
     // AdsApp.adGroups()
     //     .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
     //     .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (adGroupIterator.hasNext()) {
+    var adGroupIterator = this.addCondition(AdsApp.adGroups(), config)
+    while (adGroupIterator.hasNext()) {
       var adGroup = adGroupIterator.next();
-      adGroup.createNegativeKeyword('[Budget hotels]');
+      adGroup.createNegativeKeyword(config.negativeKeyword);
     }
   }
   //Get negative keywords in an ad group
   getNegativeKeywordForAdGroup() {
+    console.log("getNegativeKeywordForAdGroup:needed: !config.campaignName''!, !config.negativeKeywords''");
     // If you have multiple ad groups with the same name, this snippet will
     // pick an arbitrary matching ad group each time. In such cases, just
     // filter on the campaign name as well:
@@ -1392,173 +1374,108 @@ class GoogleAdsEntities extends Own{
     // AdsApp.adGroups()
     //     .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
     //     .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-    var adGroupIterator = AdsApp.adGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (adGroupIterator.hasNext()) {
-      var adGroup = adGroupIterator.next();
-      var negativeKeywordIterator = adGroup.negativeKeywords().get();
-      while (negativeKeywordIterator.hasNext()) {
-        var negativeKeyword = negativeKeywordIterator.next();
-        Logger.log('Text: ' + negativeKeyword.getText() + ', MatchType: ' +
-            negativeKeyword.getMatchType());
-      }
-    }
+    return this.addCondition(AdsApp.adGroups(), config, {negativeKeywords: true})
   }
   /*---end-***************************************************************************************************************/
   /************************************************************************************************************************/
   /*Search Audiences******************************************************************************************/
   /************************************************************************************************************************/
   //Add search audience to an ad group
-  addSearchAudienceToAdGroup() {
-    var AUDIENCE_LIST_ID = INSERT_AUDIENCE_ID_HERE;
-    var CAMPAIGN_NAME = 'INSERT_CAMPAIGN_NAME_HERE';
-    var ADGROUP_NAME = 'INSERT_ADGROUP_NAME_HERE';
+  addSearchAudienceToAdGroup(config) {
+    console.log("addSearchAudienceToAdGroup:needed: !config.condition''!, !config.audienceListId'', !config.bidModifier'', !config.searchAdGroupAudience||searchCampaignAudience''\noptionnally: config.campaignName, config.adgroupName");
+
+    var action = {action: {type: "add", entityType: "audience", config: config}}
 
     // Retrieve the ad group.
-    var adGroup = AdsApp.adGroups()
-        .withCondition('Name = "' + ADGROUP_NAME + '"')
-        .withCondition('CampaignName = "' + CAMPAIGN_NAME + '"')
-        .get()
-        .next();
-
-    // Create the search audience.
-    var searchAudience = adGroup.targeting()
-        .newUserListBuilder()
-        .withAudienceId(AUDIENCE_LIST_ID)
-        .withBidModifier(1.3)
-        .build()
-        .getResult();
-
-    // Display the results.
-    Logger.log('Search audience with name = %s and ID = %s was added to ad ' +
-        'group ID: %s', searchAudience.getName(),
-        searchAudience.getId().toFixed(0), adGroup.getId().toFixed(0));
+    return this.addCondition(
+      AdsApp.adGroups(),
+      config,
+      action
+    )
   }
   //Get ad group search audience by name
-  getAdGroupSearchAudienceByName() {
-    var CAMPAIGN_NAME = 'INSERT_CAMPAIGN_NAME_HERE';
-    var ADGROUP_NAME = 'INSERT_ADGROUP_NAME_HERE';
-    var AUDIENCE_NAME = 'INSERT_AUDIENCE_NAME_HERE';
+  getAdGroupSearchAudienceByName(config) {
+    console.log("getAdGroupSearchAudienceByName:needed: !config.condition''||(config.campaignName''&&config.adGroupName''&&config.userListName'')!");
+    var CAMPAIGN_NAME = config.campaignName
+    var ADGROUP_NAME = config.adGroupName
+    var AUDIENCE_NAME = config.userListName
+    config.searchAdGroupAudience = true
 
     // Retrieve the search audience.
-    var searchAudience = AdsApp.adGroupTargeting().audiences()
-        .withCondition('CampaignName = ' + CAMPAIGN_NAME)
-        .withCondition('AdGroupName = ' + ADGROUP_NAME)
-        .withCondition('UserListName = "' + AUDIENCE_NAME + '"')
-        .get()
-        .next();
-
-    // Display the results.
-    Logger.log('Search audience with name = %s and ID = %s was found.',
-        searchAudience.getName(), searchAudience.getId());
+    return this.addCondition(
+      AdsApp.adGroupTargeting().audiences(),
+      config || [
+        'CampaignName = ' + CAMPAIGN_NAME,
+        'AdGroupName = ' + ADGROUP_NAME,
+        'UserListName = "' + AUDIENCE_NAME + '"'
+      ],
+      config
+    )
   }
   //Filter ad group search audience by stats
-  filterAdGroupAudienceByStats() {
-    var CAMPAIGN_NAME = 'INSERT_CAMPAIGN_NAME_HERE';
-    var ADGROUP_NAME = 'INSERT_ADGROUP_NAME_HERE';
+  filterAdGroupAudienceByStats(config) {
+    console.log("filterAdGroupAudienceByStats:needed: !config.condition''||(config.campaignName''&&config.adGroupName'')!||!config.dateRange!");
 
     // Retrieve top performing search audiences.
-    var topPerformingAudiences = AdsApp.adGrouptargeting().audiences()
-        .withCondition('CampaignName = ' + CAMPAIGN_NAME)
-        .withCondition('AdGroupName = ' + ADGROUP_NAME)
-        .withCondition('Clicks > 30')
-        .forDateRange('LAST_MONTH')
-        .get();
-
-    while (topPerformingAudiences.hasNext()) {
-      var audience = topPerformingAudiences.next();
-      Logger.log('Search audience with ID = %s, name = %s and audience list ' +
-          'ID = %s has %s clicks.', audience.getId().toFixed(0),
-          audience.getName(), audience.getAudienceId(),
-          audience.getStatsFor('THIS_MONTH').getClicks());
-    }
+    return this.addCondition(
+      AdsApp.adGroupTargeting().audiences(),
+      config,
+      {stats: config.dateRange || 'THIS_MONTH'}
+    )
   }
   //Exclude search audience from a campaign
-  addExcludedAudienceToCampaign() {
-    var CAMPAIGN_NAME = INSERT_CAMPAIGN_NAME_HERE;
-    var AUDIENCE_LIST_ID = INSERT_AUDIENCE_ID_HERE;
+  addExcludedAudienceToCampaign(config) {
+    console.log("addExcludedAudienceToCampaign:needed: !config.condition''!");
+    var action = {action: {type: "add", entityType: "audience", actionType: "exclude", config: config}}
+    if(!config.searchCampaignExcludedAudience)config.searchCampaignExcludedAudience = true
 
     // Retrieve the campaign.
-    var campaign = AdsApp.campaigns()
-        .withCondition('Name = "' + CAMPAIGN_NAME + '"')
-        .get()
-        .next();
-
-    // Create the excluded audience.
-    var audience = campaign.targeting()
-        .newUserListBuilder()
-        .withAudienceId(AUDIENCE_LIST_ID)
-        .exclude()
-        .getResult();
-    Logger.log('Excluded audience with ID = %s and audience list ID = %s was ' +
-        'created for campaign: "%s".', audience.getId(),
-         audience.getAudienceId(), campaign.getName());
+    return this.addCondition(
+      AdsApp.campaigns(),
+      config,
+      {action: action}
+    )
   }
   //Get excluded search audiences for a campaign
-  getExcludedAudiencesForCampaign() {
-    var CAMPAIGN_NAME = INSERT_CAMPAIGN_NAME_HERE;
+  getExcludedAudiencesForCampaign(config) {
+    console.log("getExcludedAudiencesForCampaign:needed: !config.condition''!, !config.searchCampaignExcludedAudience''|[]!");
+
+    if(!config.searchCampaignExcludedAudience)config.searchCampaignExcludedAudience = true
 
     // Retrieve the campaign.
-    var campaign = AdsApp.campaigns()
-        .withCondition('Name = "' + CAMPAIGN_NAME + '"')
-        .get()
-        .next();
-
-    var excludedAudiences = campaign.targeting().excludedAudiences().get();
-
-    while (excludedAudiences.hasNext()) {
-      var audience = excludedAudiences.next();
-      Logger.log('Excluded audience with ID = %s, name = %s and audience list ' +
-          'ID = %s was found.', audience.getId(), audience.getName(),
-           audience.getAudienceId());
-    }
+    var campaignIte = this.addCondition(
+      AdsApp.campaigns(), config, true
+    )
   }
   //Set AdGroup targeting setting
-  setAdGroupTargetSetting() {
-    var CAMPAIGN_NAME = 'INSERT_CAMPAIGN_NAME_HERE';
-    var ADGROUP_NAME = 'INSERT_ADGROUP_NAME_HERE';
+  setAdGroupTargetSetting(config) {
+    console.log("setAdGroupTargetSetting:needed: !config.condition''!, !config.setTargetingSetting''|[]!, !config.criterionTypeGroup'', !config.targetingSetting'TARGET_ALL_TRUE||TARGET_ALL_FALSE'!");
+    var action = {action: {type: "add", entityType: "audience", actionType: "targetSetting", config: config}}
 
-    // Retrieve the ad group.
-    var adGroup = AdsApp.adGroups()
-        .withCondition('Name = "' + ADGROUP_NAME + '"')
-        .withCondition('CampaignName = "' + CAMPAIGN_NAME + '"')
-        .get()
-        .next();
-
-    // Change the target setting to TARGET_ALL.
-    adGroup.targeting().setTargetingSetting('USER_INTEREST_AND_LIST',
-        'TARGET_ALL_TRUE');
+    // Retrieve the campaign.
+    var campaignIte = this.addCondition(
+      AdsApp.adGroups(), config, action
+    )
   }
   //Update audience bid modifier
-  updateAudienceBidModifer() {
-    var CAMPAIGN_NAME = 'INSERT_CAMPAIGN_NAME_HERE';
-    var ADGROUP_NAME = 'INSERT_ADGROUP_NAME_HERE';
-    var AUDIENCE_NAME = 'INSERT_AUDIENCE_NAME_HERE';
+  updateAudienceBidModifer(config) {
+    console.log("updateAudienceBidModifer:needed: !config.condition''!, !config.setTargetingSetting''!, !config.setTargetingSetting.criterionTypeGroup'', !config.setTargetingSetting.targetingSetting'TARGET_ALL_TRUE||TARGET_ALL_FALSE'!");
+    var action = {action: {type: "add", entityType: "audience", actionType: "bidModifier", config: config}}
 
-    // Create the search audience.
-    var searchAudience = AdsApp.adGrouptargeting().audiences()
-        .withCondition('CampaignName = ' + CAMPAIGN_NAME)
-        .withCondition('AdGroupName = ' + ADGROUP_NAME)
-        .withCondition('UserListName = "' + AUDIENCE_NAME + '"')
-        .get()
-        .next();
+    // Retrieve the campaign.
+    var campaignIte = this.addCondition(
+      AdsApp.adGroups(), config, action
+    )
 
-    searchAudience.bidding().setBidModifier(1.6);
-
-    // Display the results.
-    Logger.log('Bid modifier for Search Audience with Name = "%s" in ' +
-        'Ad Group ID: "%s" was set to %s.',
-         searchAudience.getName(),
-         adGroup.getId().toFixed(0),
-         searchAudience.bidding().getBidModifier());
   }
   /*---end-***************************************************************************************************************/
   /************************************************************************************************************************/
   /*Shopping******************************************************************************************/
   /************************************************************************************************************************/
   //Retrieve all shopping campaigns
-  getAllShoppingCampaigns() {
+  getAllShoppingCampaigns(config) {
+      console.log("getAllShoppingCampaigns: NO ARGUMENT NEEDED")
+    /*
     var retval = [];
     var campaignIterator = AdsApp.shoppingCampaigns().get();
     while (campaignIterator.hasNext()) {
@@ -1570,6 +1487,8 @@ class GoogleAdsEntities extends Own{
       retval.push(campaign);
     }
     return retval;
+    */
+    return this.addCondition(AdsApp.shoppingCampaigns(), [], true)
     /*USAGE:
     var shoppingCampaigns = getAllShoppingCampaigns();
 
@@ -1580,211 +1499,72 @@ class GoogleAdsEntities extends Own{
     }
     /USAGE*/
   }
+  //Retrieve a shopping entity
+  getShopping(config) {
+    console.log("getShopping:needed:!config.shoppingCampaign|shoppingAdGroups|productAd|productGroup|''!\noptionnally:  config.condition''");
+    var entityType = config.shoppingAdGroups||config.adGroups ? "shoppingAdGroups"
+                      : config.shoppingCampaign||config.campaign ? "shoppingCampaigns"
+                      : config.productAd ? "productAds"
+                      //: config.productBrand ? "productBrands"
+                      //: config.productCategory ? "productCategorizq"
+                      //: config.productChannelExclusivity ? "productChannelExclusivitizq"
+                      //: config.productChannel ? "productChannels"
+                      //: config.productCondition ? "productConditions"
+                      //: config.productChannel ? "productChannels"
+                      : config.productGroup ? "productGroups"
+                      //: config.productItemId ? "productItemIds"
+                      //: config.ProductType ? "ProductTypes"
+                      : ""
+    return this.addCondition(AdsApp[entityType](), config, true)
+  }
   //Retrieve a shopping campaign by its name
   getShoppingCampaignByName(campaignName) {
-    var campaignIterator = AdsApp.shoppingCampaigns()
-        .withCondition("CampaignName = '" + campaignName + "'")
-        .get();
-    while (campaignIterator.hasNext()) {
-      var campaign = campaignIterator.next();
-      Logger.log('Campaign Name: %s', campaign.getName());
-    }
+    console.log("getShopping:needed: !campaignName''!");
+    return this.addCondition(AdsApp.shoppingCampaigns(), "CampaignName = '" + campaignName + "'", true)
   }
   //Retrieve a shopping adgroup by its name
-  getShoppingAdGroup() {
-    var campaignName = 'INSERT_CAMPAIGN_NAME_HERE';
-    var adGroupName = 'INSERT_ADGROUP_NAME_HERE';
-
-    var adGroupIterator = AdsApp.shoppingAdGroups()
-        .withCondition("CampaignName = '" + campaignName +
-            "' and AdGroupName = '" + adGroupName + "'")
-        .get();
-    while (adGroupIterator.hasNext()) {
-      var adGroup = adGroupIterator.next();
-      Logger.log(
-          'AdGroup Name: %s, CPC = %s, Mobile Bid ' + 'Modifier = %s',
-          adGroup.getName(),
-          adGroup.bidding().getCpc(),
-          adGroup.devices().getMobileBidModifier()
-      );
-    }
+  getShoppingAdGroup(config) {
+    console.log("getShopping:needed: !config.condition''|[]!");
+    return this.addCondition(AdsApp.shoppingAdGroups(), config, true)
   }
   //Create a shopping ad group
-  createShoppingAdGroup() {
-    var campaignName = 'INSERT_CAMPAIGN_NAME_HERE';
-
-    var shoppingCampaign = AdsApp.shoppingCampaigns()
-        .withCondition("CampaignName = '" + campaignName + "'")
-        .get()
-        .next();
-    var adGroupOperation = shoppingCampaign.newAdGroupBuilder().build();
-    var adGroup = adGroupOperation.getResult();
-    Logger.log(adGroup);
+  createShoppingAdGroup(config) {
+    console.log("getShopping:needed: !config.condition''|[]!");
+    return this.addCondition(AdsApp.shoppingCampaigns(), config, {action: {type: "create", actionType: "adGroup"/*, entityType: "shoppingCampaigns", config: config*/}})
   }
   //Create a shopping product group hierarchy
-  createTree() {
-    var campaignName = 'INSERT_CAMPAIGN_NAME_HERE';
-    var adGroupName = 'INSERT_ADGROUP_NAME_HERE';
+  createTree(config) {
+    console.log("createTree:needed: !config.condition''|[]!, !config.brandNode{!name:!, bid:}!, !config.productGroup[{!conditionName!, bid},..]!");
 
-    var shoppingAdGroup = AdsApp.shoppingAdGroups()
-        .withCondition("CampaignName = '" + campaignName +
-            "' and AdGroupName = '" + adGroupName + "'")
-        .get()
-        .next();
-
-    var root = shoppingAdGroup.rootProductGroup();
-
-    // The structure created is
-    // - root
-    //   - cardcow brand
-    //     - New
-    //     - Refurbished
-    //     - Other conditions
-    //   - Other brands
-
-    // Add a brand product group for "cardcow" under root product group.
-    var brandNode = root.newChild()
-        .brandBuilder()
-        .withName('cardcow')
-        .withBid(1.2)
-        .build()
-        .getResult();
-
-    // Add new conditions for New and Refurbished cardcow brand items.
-    var newItems = brandNode.newChild()
-        .conditionBuilder()
-        .withCondition('NEW')
-        .build()
-        .getResult();
-
-    var refurbishedItems = brandNode.newChild()
-        .conditionBuilder()
-        .withCondition('REFURBISHED')
-        .withBid(0.9)
-        .build()
-        .getResult();
+    var shoppingAdGroup = this.addCondition(AdsApp.shoppingAdGroups(), config, {type: "create", actionType: "tree"})
   }
 //***************
   //Traverses the product group hierarchy
-  walkProductPartitionTree() {
-    var campaignName = 'INSERT_CAMPAIGN_NAME_HERE';
-    var adGroupName = 'INSERT_ADGROUP_NAME_HERE';
-
-    var shoppingAdGroup = AdsApp.shoppingAdGroups()
-        .withCondition("CampaignName = '" + campaignName +
-            "' and AdGroupName = '" + adGroupName + "'")
-        .get()
-        .next();
-    var root = shoppingAdGroup.rootProductGroup();
-    walkHierarchy(root, 0);
+  walkProductPartitionTree(config) {
+    console.log("walkProductPartitionTree:needed: !config.condition''|[]!");
+    var shoppingAdGroup = this.addCondition(AdsApp.shoppingAdGroups(), config, {type: "create", actionType: "walkHierarchy"})
   }
 
-  walkHierarchy(productGroup, level) {
-    var description = '';
-
-    if (productGroup.isOtherCase()) {
-      description = 'Other';
-    } else if (productGroup.getDimension() == 'CATEGORY') {
-      // Shows how to process a product group differently based on its type.
-      description = productGroup.asCategory().getName();
-    } else {
-      description = productGroup.getValue();
-    }
-
-    var padding = new Array(level + 1).join('-');
-
-    // Note: Child product groups may not have a max cpc if it has been excluded.
-    Logger.log(
-        '%s %s, %s, %s, %s, %s',
-        padding,
-        description,
-        productGroup.getDimension(),
-        productGroup.getMaxCpc(),
-        productGroup.isOtherCase(),
-        productGroup.getId().toFixed()
-    );
-    var childProductGroups = productGroup.children().get();
-    while (childProductGroups.hasNext()) {
-      var childProductGroup = childProductGroups.next();
-      walkHierarchy(childProductGroup, level + 1);
-    }
-  }
 //***************
   //Gets the 'Everything else' product group
-  getEverythingElseProductGroup() {
-    var campaignName = 'INSERT_CAMPAIGN_NAME_HERE';
-    var adGroupName = 'INSERT_ADGROUP_NAME_HERE';
-
-    var shoppingAdGroup = AdsApp.shoppingAdGroups()
-        .withCondition("CampaignName = '" + campaignName +
-            "' and AdGroupName = '" + adGroupName + "'")
-        .get()
-        .next();
-
-    var rootProductGroup = shoppingAdGroup.rootProductGroup();
-    var childProductGroups = rootProductGroup.children().get();
-    while (childProductGroups.hasNext()) {
-      var childProductGroup = childProductGroups.next();
-      if (childProductGroup.isOtherCase()) {
-        // Note: Child product groups may not have a max cpc if it has been
-        // excluded.
-        Logger.log(
-            '"Everything else" product group found. Type of the product ' +
-                'group is %s and bid is %s.',
-            childProductGroup.getDimension(),
-            childProductGroup.getMaxCpc());
-        return;
-      }
-    }
-    Logger.log('"Everything else" product group not found under root ' +
-        'product group.');
+  getEverythingElseProductGroup(config) {
+    console.log("getEverythingElseProductGroup:needed: !config.condition''|[]!");
+    var shoppingAdGroup = this.addCondition(AdsApp.shoppingAdGroups(), config, {type: "create", actionType: "everythingElse"})
   }
   //Update bids for product groups
-  updateProductGroupBid() {
-    var productGroups = AdsApp.productGroups()
-        .withCondition('Clicks > 5')
-        .withCondition('Ctr > 0.01')
-        .forDateRange('LAST_MONTH')
-        .get();
-    while (productGroups.hasNext()) {
-      var productGroup = productGroups.next();
-      productGroup.setMaxCpc(productGroup.getMaxCpc() + 0.01);
-    }
+  updateProductGroupBid(config) {
+    console.log("updateProductGroupBid:needed: !config.condition''|[]!, !config.setMaxCpc(int)!");
+    var productGroups = this.addCondition(AdsApp.productGroups(), config, {type: "get", actionType: "updateProductGroupBid", config: config})
   }
   //Retrieve product ads
-  getProductAds() {
-    var adGroupName = 'INSERT_ADGROUP_NAME_HERE';
-
-    var shoppingAdGroup = AdsApp.shoppingAdGroups()
-        .withCondition("AdGroupName = '" + adGroupName + "'")
-        .get()
-        .next();
-
-    var productAds = shoppingAdGroup.ads().get();
-    while (productAds.hasNext()) {
-      var productAd = productAds.next();
-      Logger.log(
-          "Ad with ID = %s was found.",
-          productAd.getId().toFixed(0));
-    }
+  getProductAds(config) {
+    console.log("getProductAds:needed: !config.condition''|[]!");
+    return this.addCondition(AdsApp.shoppingAdGroups(), config, true)
   }
   //Create product ads
-  createProductAd() {
-    var adGroupName = 'INSERT_ADGROUP_NAME_HERE';
-
-    var shoppingAdGroup = AdsApp.shoppingAdGroups()
-        .withCondition("AdGroupName = '" + adGroupName + "'")
-        .get()
-        .next();
-
-    var adOperation = shoppingAdGroup.newAdBuilder()
-        .withMobilePreferred(true)
-        .build();
-    var productAd = adOperation.getResult();
-    Logger.log(
-        "Ad with ID = %s was created.",
-        productAd.getId().toFixed(0));
-
+  createProductAd(config) {
+    console.log("createProductAd:needed: !config.condition''|[]!");
+    return this.addCondition(AdsApp.shoppingAdGroups(), config, {action: {type: "create", actionType: "createProductAd", config: config}})
   }
   /*---end-***************************************************************************************************************/
   /************************************************************************************************************************/
@@ -1792,39 +1572,19 @@ class GoogleAdsEntities extends Own{
   /************************************************************************************************************************/
   //Retrieve all user lists
   getAllUserLists() {
-    var userlistIt = AdsApp.userlists().get();
-    while (userlistIt.hasNext()){
-      var userList = userlistIt.next();
-      Logger.log('Name: ' + userList.getName() +
-          ' Type: ' + userList.getType() +
-          ' ID: ' + userList.getId());
-      Logger.log(' Desc: ' + userList.getDescription() +
-          ' IsOpen: ' + userList.isOpen() +
-          ' MembershipLifeSpan: ' + userList.getMembershipLifeSpan());
-      Logger.log(' SizeForDisplay: ' + userList.getSizeForDisplay() +
-          ' SizeRangeForDisplay: ' + userList.getSizeRangeForDisplay());
-      Logger.log(' SizeForSearch: ' + userList.getSizeForSearch() +
-          ' SizeRangeForSearch: ' + userList.getSizeRangeForSearch());
-      Logger.log(' IsReadOnly: ' + userList.isReadOnly() +
-          ' IsEligibleForSearch: ' + userList.isEligibleForSearch() +
-          ' IsEligibleForDisplay: ' + userList.isEligibleForDisplay());
-      Logger.log(' ');
-    }
+    console.log("getAllUserLists: NO ARGUMENT NEEDED")
+    return this.addCondition(AdsApp.userlists(), [], true)
   }
   //Get the number of members in a user list
   getUserListMemberCount() {
-    var iterator = AdsApp.userlists().get();
-    while (iterator.hasNext()) {
-      var userlist = iterator.next();
-      Logger.log('User List [' + userlist.getName() + ']  has ' +
-          userlist.getSizeForDisplay() +
-          ' members for Search campaigns and  ' +
-          userlist.getSizeRangeForDisplay() +
-          ' members for Display campaigns.');
-    }
+    console.log("getUserListMemberCount: NO ARGUMENT NEEDED")
+    return this.addCondition(AdsApp.userlists(), [], {custom: ["getSizeForDisplay", "getSizeRangeForDisplay"]})
   }
   //Open a user list
   openUserLists() {
+    console.log("openUserLists: NO ARGUMENT NEEDED")
+    return this.addCondition(AdsApp.userlists(), [], {action: {type: "open", actionType: "openUserLists"}})
+    /*
     var iterator = AdsApp.userlists().get();
     while (iterator.hasNext()) {
       var userlist = iterator.next();
@@ -1832,24 +1592,15 @@ class GoogleAdsEntities extends Own{
          userlist.open();
       }
     }
+    */
   }
   //Retrieve search campaigns targeted by a user list
   getSearchCampaignsTargetedByUserList() {
-    var userlistIterator = AdsApp.userlists().get();
-    while (userlistIterator.hasNext()) {
-      var userList = userlistIterator.next();
-      var campaignIterator = userList.targetedCampaigns().get();
-      var campaignNames = [];
-
-      while (campaignIterator.hasNext()) {
-        var campaign = campaignIterator.next();
-        campaignNames.push(campaign.getName());
-      }
-
-      Logger.log("User List [" + userList.getName() +
-          "]  is targeting [ " +
-          campaignNames.join(',') + "]");
-    }
+    console.log("getSearchCampaignsTargetedByUserList: NO ARGUMENT NEEDED")
+    var a, userList, resp = this.addCondition(AdsApp.userlists(), [], true)
+    for(a in resp)
+      resp.campaigns = this.addCondition(resp[a].entity.targetedCampaigns(), [], true)
+    return resp
   }
   /*---end-***************************************************************************************************************/
   /************************************************************************************************************************/
@@ -1857,358 +1608,107 @@ class GoogleAdsEntities extends Own{
   /************************************************************************************************************************/
   //Retrieve all video campaigns
   getAllVideoCampaigns() {
+    console.log("getAllVideoCampaigns: NO ARGUMENT NEEDED")
     // AdsApp.videoCampaigns() will return all campaigns that are not
     // removed by default.
-    var videoCampaigns = [];
-    var videoCampaignIterator = AdsApp.videoCampaigns().get();
-    Logger.log('Total campaigns found : ' +
-        videoCampaignIterator.totalNumEntities());
-    while (videoCampaignIterator.hasNext()) {
-      var videoCampaign = videoCampaignIterator.next();
-      Logger.log(videoCampaign.getName());
-      videoCampaigns.push(videoCampaign);
-    }
-    return videoCampaigns;
-    /*USAGE:
-    var videoCampaigns = getAllVideoCampaigns();
-
-    for (var i = 0; i < videoCampaigns.length; i++) {
-      var videoCampaign = videoCampaigns[i];
-
-      // Process your campaign.
-    }
-    USAGE*/
+    return this.addCondition(AdsApp.videoCampaigns(), [], true)
   }
 //********************
   //Retrieve a video campaign by its name
-  getVideoCampaignByName() {
-    var videoCampaignIterator = AdsApp.videoCampaigns()
-        .withCondition('Name = "INSERT_CAMPAIGN_NAME_HERE"')
-        .get();
-    if (videoCampaignIterator.hasNext()) {
-      var videoCampaign = videoCampaignIterator.next();
-      Logger.log('Campaign Name: ' + videoCampaign.getName());
-      Logger.log('Enabled: ' + videoCampaign.isEnabled());
-      Logger.log('Bidding strategy: ' + videoCampaign.getBiddingStrategyType());
-      Logger.log('Ad rotation: ' + videoCampaign.getAdRotationType());
-      Logger.log('Start date: ' + formatDate(videoCampaign.getStartDate()));
-      Logger.log('End date: ' + formatDate(videoCampaign.getEndDate()));
-      return videoCampaign;
-    }
-    return null;
-  }
-
-  formatDate(date) {
-    zeroPad(number) { return Utilities.formatString('%02d', number); }
-    return (date == null) ? 'None' : zeroPad(date.year) + zeroPad(date.month) +
-        zeroPad(date.day);
+  getVideoCampaignByName(config) {
+    console.log("getVideoCampaignByName:needed: !config.videoCampaignName''|[]!");
+    return this.addCondition(AdsApp.videoCampaigns(), 'Name = "'+config.videoCampaignName+'"', true)
   }
 //********************
   //Retrieve a video campaign's stats
-  getVideoCampaignStats() {
-    var videoCampaignIterator = AdsApp.videoCampaigns()
-        .withCondition('Name = "INSERT_CAMPAIGN_NAME_HERE"')
-        .get();
-    if (videoCampaignIterator.hasNext()) {
-      var videoCampaign = videoCampaignIterator.next();
-      // Fetch stats for the last month. See the DateRangeLiteral section at
-      // https://developers.google.com/adwords/api/docs/guides/awql#formal_grammar
-      // for a list of all supported pre-defined date ranges.
-      // Note: Reports can also be used to fetch stats. See
-      // https://developers.google.com/google-ads/scripts/docs/features/reports
-      // for more information.
-      var stats = videoCampaign.getStatsFor('LAST_MONTH');
-      Logger.log(videoCampaign.getName() + ', ' + stats.getImpressions() +
-          ' impressions, ' + stats.getViews() + ' views');
-      return stats;
-    }
-    return null;
+  getVideoCampaignStats(config) {
+    console.log("getVideoCampaignStats:needed: !config.condition''|[]!, !config.dateRange''!");
+    return this.addCondition(AdsApp.videoCampaigns(), config,  {stats: config.dateRange})
   }
   //Pause a video campaign
-  pauseVideoCampaign() {
-    var videoCampaignIterator = AdsApp.videoCampaigns()
-        .withCondition('Name = "INSERT_CAMPAIGN_NAME_HERE"')
-        .get();
-    if (videoCampaignIterator.hasNext()) {
-      var videoCampaign = videoCampaignIterator.next();
-      videoCampaign.pause();
-    }
+  pauseVideoCampaign(config) {
+    console.log("pauseVideoCampaign:needed: !config.condition''|[]!");
+    return this.addCondition(AdsApp.videoCampaigns(), config, {action: {type: "pause"}})
   }
   //Add a video ad group
-  addVideoAdGroup() {
-    var videoCampaignIterator = AdsApp.videoCampaigns()
-        .withCondition('Name = "INSERT_CAMPAIGN_NAME_HERE"')
-        .get();
-    if (videoCampaignIterator.hasNext()) {
-      var videoCampaign = videoCampaignIterator.next();
-      var videoAdGroupOperation = videoCampaign.newVideoAdGroupBuilder()
-          .withName('INSERT_ADGROUP_NAME_HERE')
-          // This can also be 'TRUE_VIEW_IN_DISPLAY'
-          .withAdGroupType('TRUE_VIEW_IN_STREAM')
-          .withCpv(1.2)
-          .build();
-    }
+  addVideoAdGroup(config) {
+    console.log("addVideoAdGroup:needed: !config.condition''|[]!, !config.withName''!, !config.withAdGroupType'TRUE_VIEW_IN_STREAM|TRUE_VIEW_IN_DISPLAY'!, !config.withCpv''!");
+    return this.addCondition(AdsApp.videoAdGroups(), config, {action: {type: "add", entityType: "video", config: config}})
   }
   //Update a video ad group
-  updateAdGroup() {
-    var videoAdGroupIterator = AdsApp.videoAdGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (videoAdGroupIterator.hasNext()) {
-      var videoAdGroup = videoAdGroupIterator.next();
-      videoAdGroup.bidding().setCpv(1.2);
-      // update other properties as required here
-    }
+  updateAdGroup(config) {
+    console.log("updateAdGroup:needed: !config.condition''|[]!, !config.setCpv''!");
+    return this.addCondition(AdsApp.videoAdGroups(), config, {action: {type: "set", entityType: "video", actionType: "setCpv", config: config}})
   }
   //Retrieve all video ad groups
   getAllVideoAdGroups() {
+    console.log("getAllVideoAdGroups: NO ARGUMENT NEEDED")
+    return this.addCondition(AdsApp.videoAdGroups(), [])
     // AdsApp.videoAdGroups() will return all ad groups that are not removed by
     // default.
-    var videoAdGroups = [];
-    var videoAdGroupIterator = AdsApp.videoAdGroups().get();
-    Logger.log('Total adGroups found : ' + videoAdGroupIterator.totalNumEntities());
-    while (videoAdGroupIterator.hasNext()) {
-      var videoAdGroup = videoAdGroupIterator.next();
-      Logger.log('AdGroup Name: ' + videoAdGroup.getName() +
-          ', AdGroup Type: ' + videoAdGroup.getAdGroupType());
-      videoAdGroups.push(videoAdGroup);
-    }
-    return videoAdGroups;
   }
   //Retrieve a video ad group by name
-  getVideoAdGroupByName() {
-    var videoAdGroupIterator = AdsApp.videoAdGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (videoAdGroupIterator.hasNext()) {
-      var videoAdGroup = videoAdGroupIterator.next();
-      Logger.log('AdGroup Name: ' + videoAdGroup.getName());
-      Logger.log('AdGroup Type: ' + videoAdGroup.getAdGroupType());
-      Logger.log('Enabled: ' + videoAdGroup.isEnabled());
-      return videoAdGroup;
-    }
-    return null;
+  getVideoAdGroupByName(config) {
+    console.log("getVideoAdGroupByName:needed: !config.videoAdGroupName''!");
+    return this.addCondition(AdsApp.videoAdGroups(), 'Name = "'+config.videoAdGroupName+'"', true)
   }
   //Retrieve a video ad group's stats
   getVideoAdGroupStats() {
-    var videoAdGroupIterator = AdsApp.videoAdGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (videoAdGroupIterator.hasNext()) {
-      var videoAdGroup = videoAdGroupIterator.next();
-      // You can also request reports for pre-defined date ranges. See
-      // https://developers.google.com/adwords/api/docs/guides/awql,
-      // DateRangeLiteral section for possible values.
-      var stats = videoAdGroup.getStatsFor('LAST_MONTH');
-      Logger.log(videoAdGroup.getName() + ', ' + stats.getImpressions() + ', ' +
-          stats.getViews());
-      return stats;
-    }
-    return null;
+    console.log("getVideoAdGroupStats:needed: !config.condition''!, !config.dateRange!");
+    return this.addCondition(AdsApp.videoAdGroups(), config, {stats: config.dateRange})
   }
   //Pause a video ad group
   pauseVideoAdGroup() {
-    var videoAdGroupIterator = AdsApp.videoAdGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (videoAdGroupIterator.hasNext()) {
-      var videoAdGroup = videoAdGroupIterator.next();
-      videoAdGroup.pause();
-      Logger.log('AdGroup with name: ' + videoAdGroup.getName() +
-          ' has paused status: ' + videoAdGroup.isPaused());
-    }
+    console.log("pauseVideoAdGroup:needed: !config.condition''!");
+    return this.addCondition(AdsApp.videoAdGroups(), config, {action: {type: "pause"}})
   }
   //Retrieve any video for use in an ad
-  getVideo() {
+  getVideo(config) {
+    console.log("getVideo:needed: !config.condition'Type = `AUDIO, DYNAMIC_IMAGE, ICON, IMAGE, STANDARD_ICON, VIDEO, COMPOSITE_BUNDLE`'!, \nsee availables conditions here: https://developers.google.com/google-ads/scripts/docs/reference/adsapp/adsapp_mediaselector#columns");
+    return this.addCondition(AdsApp.adMedia().media(), config, {action: {type: "pause"}})
     // This will just get the first valid YouTube video in the account.
     // It demonstrates how to filter to see if a video is valid for video ads.
-    var videos = AdsApp.adMedia().media()
-        .withCondition("Type = VIDEO")
-        .get();
-    var video = null;
-    while (videos.hasNext()) {
-      video = videos.next();
-      // You have to use a YouTube video for True View ads, so only return if
-      // the YouTubeVideoId exists.
-      if(video.getYouTubeVideoId()) {
-        return video;
-      }
-    }
-    return null;
   }
   //Retrieve a specific video for use in an ad
-  getVideoByYouTubeId() {
+  getVideoByYouTubeId(config) {
+    console.log("getVideoByYouTubeId:needed: !config.youTubeVideoId''!");
+    return this.addCondition(AdsApp.adMedia().media(), "Type = VIDEO AND YouTubeVideoId = "+config.youTubeVideoId+"", true)
     // You can filter on the YouTubeVideoId if you already have that video in
     // your account to fetch the exact one you want right away.
-    var videos = AdsApp.adMedia().media()
-        .withCondition("Type = VIDEO AND YouTubeVideoId = ABCDEFGHIJK")
-        .get();
-    if (videos.hasNext()) {
-      return videos.next();
-    }
-    return null;
   }
   //Add an in-stream video ad
   addInStreamVideoAd() {
-    // If you have multiple adGroups with the same name, this snippet will
-    // pick an arbitrary matching ad group each time. In such cases, just
-    // filter on the campaign name as well:
-    //
-    // AdsApp.videoAdGroups()
-    //     .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-    //     .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-    var videoAdGroupIterator = AdsApp.videoAdGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    var video = getVideo(); // Defined above
-    if (videoAdGroupIterator.hasNext()) {
-      var videoAdGroup = videoAdGroupIterator.next();
-      videoAdGroup.newVideoAd().inStreamAdBuilder()
-          .withAdName("In Stream Ad")
-          .withDisplayUrl("http://www.example.com")
-          .withFinalUrl("http://www.example.com")
-          .withVideo(video)
-          .build();
-    }
-  }
-  //Add an in-stream video ad
-  addInStreamVideoAd() {
-    // If you have multiple adGroups with the same name, this snippet will
-    // pick an arbitrary matching ad group each time. In such cases, just
-    // filter on the campaign name as well:
-    //
-    // AdsApp.videoAdGroups()
-    //     .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-    //     .withCondition('CampaignName = "INSERT_CAMPAIGN_NAME_HERE"')
-    var videoAdGroupIterator = AdsApp.videoAdGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    var video = getVideo(); // Defined above
-    if (videoAdGroupIterator.hasNext()) {
-      var videoAdGroup = videoAdGroupIterator.next();
-      videoAdGroup.newVideoAd().inStreamAdBuilder()
-          .withAdName("In Stream Ad")
-          .withDisplayUrl("http://www.example.com")
-          .withFinalUrl("http://www.example.com")
-          .withVideo(video)
-          .build();
-    }
+    console.log("addInStreamVideoAd:needed: !config.video.condition''!, !config.condition''!, !config.withAdName''!, !config.withDisplayUrl''!, !config.withFinalUrl''!");
+    config.video = getVideo(config.video);
+    return this.addCondition(AdsApp.videoAdGroups(), config, {action: {type: "add", entityType: "media", actionType: "addInStream", config: config}})
   }
   //Add video discovery ad
-  addVideoDiscoveryAd() {
-    var videoAdGroupIterator = AdsApp.videoAdGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    var video = getVideo(); // Defined above
-    if (videoAdGroupIterator.hasNext()) {
-      var videoAdGroup = videoAdGroupIterator.next();
-      videoAdGroup.newVideoAd().videoDiscoveryAdBuilder()
-          .withAdName("Video Discovery Ad")
-          .withDescription1("Description line 1")
-          .withDescription2("Description line 2")
-          .withHeadline("Headline")
-          .withThumbnail("THUMBNAIL1")
-          .withDestinationPage("WATCH")
-          .withVideo(video)
-          .build();
-    }
+  addVideoDiscoveryAd(config) {
+    console.log("addVideoDiscoveryAd:needed: !config.video.condition''!, !config.condition''!, !config.withAdName''!, !config.withDescription1''!, !config.withDescription2''!, !config.withHeadline''!, !config.withThumbnail''!, !config.withDestinationPage''!");
+    config.video = getVideo(config.video);
+    return this.addCondition(AdsApp.videoAdGroups(), config, {action: {type: "add", entityType: "media", actionType: "videoDiscoveryAd", config: config}})
   }
   //Pause video ads in video ad group
-  pauseVideoAdsInVideoAdGroup() {
-    var videoAdGroupIterator = AdsApp.videoAdGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (videoAdGroupIterator.hasNext()) {
-      var videoAdGroup = videoAdGroupIterator.next();
-      var videoAdsIterator = videoAdGroup.videoAds().get();
-      while (videoAdsIterator.hasNext()) {
-        var videoAd = videoAdsIterator.next();
-        videoAd.pause();
-      }
-    }
+  pauseVideoAdsInVideoAdGroup(config) {
+    console.log("pauseVideoAdsInVideoAdGroup:needed: !config.condition''!");
+    return this.addCondition(AdsApp.videoAdGroups(), config, {action: {type: "pause"}})
   }
 //************************
   //Retrieve video ads in video ad group
-  getInStreamAdsInVideoAdGroup() {
-    var videoAds = [];
-    var videoAdGroupIterator = AdsApp.videoAdGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (videoAdGroupIterator.hasNext()) {
-      var videoAdGroup = videoAdGroupIterator.next();
-      var videoAdsIterator = videoAdGroup.videoAds()
-          .withCondition('Type="TRUE_VIEW_IN_STREAM_VIDEO_AD"').get();
-      while (videoAdsIterator.hasNext()) {
-        var videoAd = videoAdsIterator.next();
-        logVideoAd(videoAd);
-        videoAds.push(videoAd);
-      }
-    }
-    return videoAds;
-  }
-
-  logVideoAd(videoAd) {
-    // Note that not all fields are populated for both video ad types.
-    Logger.log('Video ID : ' + videoAd.getVideoId());
-    Logger.log('Headline : ' + videoAd.getHeadline());
-    Logger.log('Line1 : ' + videoAd.getDescription1());
-    Logger.log('Line2 : ' + videoAd.getDescription2());
-    Logger.log('Final URL : ' + videoAd.urls().getFinalUrl());
-    Logger.log('Display URL : ' + videoAd.getDisplayUrl());
-    Logger.log('Destination Page : ' + videoAd.getDestinationPage());
-    Logger.log('Approval Status : ' + videoAd.getApprovalStatus());
-    Logger.log('Enabled : ' + videoAd.isEnabled());
+  getInStreamAdsInVideoAdGroup(config) {
+    console.log("getInStreamAdsInVideoAdGroup:needed: !config.video.condition''!, !config.condition''!");
+    return this.addCondition(AdsApp.videoAdGroups(), config, {videoAds: true})
   }
 //************************
   //Retrieve ad stats from a video ad group
-  getVideoAdGroupAdStats() {
-    var statsList = [];
-    var videoAdGroupIterator = AdsApp.videoAdGroups()
-        .withCondition('Name = "INSERT_ADGROUP_NAME_HERE"')
-        .get();
-    if (videoAdGroupIterator.hasNext()) {
-      var videoAdGroup = videoAdGroupIterator.next();
-      var videoAdsIterator = videoAdGroup.videoAds().get();
-      while (videoAdsIterator.hasNext()) {
-        var videoAd = videoAdsIterator.next();
-        // You can also request reports for pre-defined date ranges. See
-        // https://developers.google.com/adwords/api/docs/guides/awql,
-        // DateRangeLiteral section for possible values.
-        var stats = videoAd.getStatsFor('LAST_MONTH');
-        Logger.log(adGroup.getName() + ', ' +
-            stats.getViews() + ', ' + stats.getImpressions());
-        statsList.push(stats);
-      }
-    }
-    return statsList;
+  getVideoAdGroupAdStats(config) {
+    console.log("getVideoAdGroupAdStats:needed: !config.video.condition''!, !config.condition''!");
+    return this.addCondition(AdsApp.videoAdGroups(), config, {videoAds: {stats: config.dateRange}, condition: config.video})
   }
   //Add in-market audience to a video ad group
   addInMarketAudienceToVideoAdGroup() {
-    var ag = AdsApp.videoAdGroups()
-        .withCondition('CampaignStatus != REMOVED')
-        .get()
-        .next();
-
-    Logger.log(
-        'AdGroup ID %s Campaign ID %s', ag.getId().toString(),
-        ag.getVideoCampaign().getId().toString());
-
-    // Get the audience ID from the list here:
-    // https://developers.google.com/adwords/api/docs/appendix/codes-formats#in-market-categories
-
-    var audience = ag.videoTargeting()
-        .newAudienceBuilder()
-        .withAudienceId(80428)
-        .withAudienceType('USER_INTEREST')
-        .build();
-
-    Logger.log('Added Audience ID %s', audience.getResult().getId().toString());
-
-    var audiences = ag.videoTargeting().audiences().get();
-    while (audiences.hasNext()) {
-      var aud = audiences.next();
-      Logger.log('Retrieved Audience ID %s', aud.getId().toString());
-    }
+    console.log("addInMarketAudienceToVideoAdGroup:needed: !config.condition''!, !config.withAudienceId''! !config.withAudienceType'USER_INTEREST,USER_LIST,CUSTOM_AFFINITY'!");
+    return this.addCondition(AdsApp.videoAdGroups(), 'CampaignStatus != REMOVED', {action: {type: "add", entityType: "media", actionType: "inMarketAudience", config: config}, videoTargeting: {type: "audience"}})
   }
   //
   /*---end-***************************************************************************************************************/
