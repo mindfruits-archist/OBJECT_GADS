@@ -16,7 +16,7 @@ class Own extends adsInheritence{
     }
     console.log(str);
   }
-  /*ownUtilities***************************************************************************************************************/
+  /*ownUtilities1***************************************************************************************************************/
   /************************************************************************************************************************/
   getIteratorFromConfig(config){
     return config.accounts ? AdsApp.accounts() :
@@ -595,6 +595,40 @@ class Own extends adsInheritence{
   }
   getMediaResult(media){
     return {entity: media, getId: media.getId, getFileSize: media.getFileSize(), getMimeType: media.getMimeType(), getName: media.getName(), getReferenceId: media.getReferenceId(), getSourceUrl: media.getSourceUrl(), getType: media.getType(), getHeadline: media.getHeadline(), getPolicyApprovalStatus: media.getPolicyApprovalStatus(), getType: media.getType(), getVideoId: media.getVideoId(), isEnabled: media.isEnabled(), isPaused: media.isPaused()}
+  }
+  /*---end-***************************************************************************************************************/
+  /************************************************************************************************************************/
+  /*ownUtilities***************************************************************************************************************/
+  /************************************************************************************************************************/
+  getQuery(config){
+    var select = !config.select ? "" : Array.isArray(config.select) ? config.select.join(',') : config.select
+    var from = !config.from ? "" : Array.isArray(config.from) ? config.from.join(', ') : config.from
+    var where = !config.where ? "" : Array.isArray(config.where) ? config.where.join(' AND ') : config.where
+    var rest = !config.rest ? "" : Array.isArray(config.rest) ? config.rest.join(' ') : config.rest
+    return config.query || 'SELECT '+select+' FROM '+from+' '+(where==''?'':' WHERE '+where+' ')+' '+(rest==''?'':rest)
+  }
+  getColumnHeader(config){
+    var columnHeaders = []
+    if(config.query){
+      var fromIndex = config.query.indexOf('from') !== -1 ? config.query.indexOf('from') : config.query.indexOf('FROM')
+      var whereIndex = config.query.indexOf('where') !== -1 ? config.query.indexOf('where') : config.query.indexOf('WHERE')
+      config.from = config.query.substring(fromIndex+4, whereIndex).split(',')
+    }
+    if(typeof config.from == "string")config.from = config.from.split(',')
+    for(a in config.from){
+      config.from[a] = config.from[a].trim()
+      columnHeaders.push(report.getColumnHeader(config.from[a]).getBulkUploadColumnName())
+    }
+    // Create an upload with the report columns.
+    var upload = AdsApp.bulkUploads().newCsvUpload(columnHeaders);
+    upload.forCampaignManagement();
+    return upload
+  }
+  newCsvUpload(columnHeaders, config){
+    var upload = AdsApp.bulkUploads().newCsvUpload(columnHeaders);
+    if(config.forCampaignManagement)upload.forCampaignManagement();
+    if(config.forOfflineConversions)upload.forOfflineConversions();
+    return upload
   }
   /*---end-***************************************************************************************************************/
   /************************************************************************************************************************/
